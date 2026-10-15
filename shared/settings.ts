@@ -13,7 +13,7 @@ export const budgetSettings = defineSettings({
   scope: "host",
   version: 1,
   schema: z.object({
-    cny: z.number().min(0).default(300),
+    cny: z.number().min(0).default(100),
     usd: z.number().min(0).default(0),
   }),
 });

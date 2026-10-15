@@ -10,6 +10,7 @@
     "README.md",
     "LICENSE",
     "icon.svg",
+    "assets/",
     "index.client.tsx",
     "index.server.ts",
     "client/",

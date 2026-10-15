@@ -2,7 +2,9 @@
 
 Paseo 的 **DeepSeek 官方余额**用量源（usage source）插件。装好后，Paseo 的用量面板会多出一张 DeepSeek 卡片，显示 `api.deepseek.com` 账号的实时余额。
 
-需要 **Paseo ≥ 0.11.0**（用量源 API 是 0.11 引入的）。只贡献 server 侧代码，没有 client 入口，因此不受 app 版本匹配限制。
+需要 **Paseo ≥ 0.11.0**（用量源 API 是 0.11 引入的）。server 侧提供用量源与设置，client 侧只贡献一个设置页。
+
+> 非官方项目，与 DeepSeek 无关联。图标取自 DeepSeek 官方 wordmark 中的鲸鱼路径，仅用于标识本插件展示的是 DeepSeek 账号。
 
 ## 它读哪些凭据仓库
 
@@ -46,7 +48,7 @@ Paseo 的 **DeepSeek 官方余额**用量源（usage source）插件。装好后
 ```ts
 // shared/settings.ts
 schema: z.object({
-  cny: z.number().min(0).default(300),
+  cny: z.number().min(0).default(100),
   usd: z.number().min(0).default(0),
 })
 ```

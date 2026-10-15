@@ -6,7 +6,7 @@
  *
  * Pass budget denominators as arguments to see the gauge with a different denominator:
  *
- *   npm run probe -- 300
+ *   npm run probe -- 100
  */
 import { budgetMap, budgetSettings } from "../shared/settings.js";
 import { inputSchema } from "../shared/input.js";

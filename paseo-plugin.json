@@ -1,7 +1,8 @@
 {
   "id": "deepseek-usage",
-  "name": "DeepSeek 余额",
-  "description": "Show the official DeepSeek (api.deepseek.com) account balance in Paseo's Usage surfaces. 在 Paseo 的用量面板里显示 DeepSeek 官方账号余额。",
+  "name": "DeepSeek balance",
+  "description": "Show the official DeepSeek (api.deepseek.com) account balance in Paseo's Usage surfaces, with an optional budget percentage. 在 Paseo 的用量面板里显示 DeepSeek 官方账号余额，并可选地按预算换算成百分比。",
+  "icon": "assets/icon.png",
   "requirements": {
     "paseo": ">=0.11.0"
   }

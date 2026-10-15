@@ -46,7 +46,7 @@ export function BudgetSettingsScreen({ theme }: PluginSurfaceProps) {
     return (
       <SettingsSection title="预算分母">
         <SettingsCard>
-          <SettingsRow label="设置读不出来" error={message} hint="重置会把它恢复成默认值（CNY 300）" />
+          <SettingsRow label="设置读不出来" error={message} hint="重置会把它恢复成默认值（CNY 100）" />
           <SettingsAction label="重置" actionLabel={settings.saving ? "重置中…" : "重置"} onPress={() => void settings.reset()} disabled={settings.saving} />
         </SettingsCard>
       </SettingsSection>
@@ -59,9 +59,9 @@ export function BudgetSettingsScreen({ theme }: PluginSurfaceProps) {
         <SettingsCard>
           <SettingsInput
             label="CNY 预算"
-            hint="人民币余额的百分比分母，例如 300。留空或填 0 = 不显示百分比。"
+            hint="人民币余额的百分比分母，例如 100。留空或填 0 = 不显示百分比。"
             initialValue={String(settings.values.cny)}
-            placeholder="300"
+            placeholder="100"
             onChangeText={(text) => {
               setCny(text);
               setSaved(false);
