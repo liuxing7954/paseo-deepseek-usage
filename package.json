@@ -1,0 +1,30 @@
+{
+  "name": "paseo-plugin-deepseek-usage",
+  "version": "0.1.0",
+  "description": "DeepSeek official balance as a Paseo usage source, with an optional budget percentage.",
+  "license": "MIT",
+  "type": "module",
+  "files": [
+    "paseo-plugin.json",
+    "OVERVIEW.md",
+    "README.md",
+    "LICENSE",
+    "icon.svg",
+    "index.client.tsx",
+    "index.server.ts",
+    "client/",
+    "server/",
+    "shared/"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "probe": "tsc --outDir .probe-build --noEmit false && node .probe-build/scripts/probe.js"
+  },
+  "devDependencies": {
+    "@getpaseo/plugin": "0.11.2",
+    "@types/node": "^22.10.2",
+    "@types/react": "~19.2.0",
+    "typescript": "^5.9.3",
+    "zod": "^4.4.3"
+  }
+}
