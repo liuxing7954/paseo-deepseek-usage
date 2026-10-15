@@ -3,6 +3,21 @@
   "version": "0.1.0",
   "description": "DeepSeek official balance as a Paseo usage source, with an optional budget percentage.",
   "license": "MIT",
+  "author": "jixy <467677527@qq.com>",
+  "keywords": [
+    "paseo",
+    "paseo-plugin",
+    "deepseek",
+    "usage",
+    "balance",
+    "quota"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/liuxing7954/paseo-deepseek-usage.git"
+  },
+  "homepage": "https://github.com/liuxing7954/paseo-deepseek-usage#readme",
+  "bugs": "https://github.com/liuxing7954/paseo-deepseek-usage/issues",
   "type": "module",
   "files": [
     "paseo-plugin.json",

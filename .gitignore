@@ -1,2 +1,8 @@
 node_modules/
 .probe-build/
+
+# Credentials must never be committed. npm excludes .npmrc from a tarball, but git does not.
+.npmrc
+.env
+.env.*
+*.tgz
