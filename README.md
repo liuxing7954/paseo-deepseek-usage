@@ -62,20 +62,28 @@ schema: z.object({
 侧边栏要真正显示，还得在 **Usage 面板**里打开 `Summary in sidebar` 开关（提示语：*Pinned windows show in the sidebar footer*），并按喜好选择 `Percentages: Used / Remaining`。
 
 
+## 安装
+
+已发布到 npm：
+
+```bash
+paseo plugin add npm:paseo-plugin-deepseek-usage
+```
+
+或直接从仓库装：
+
+```bash
+paseo plugin add git:liuxing7954/paseo-deepseek-usage
+```
+
 ## 开发
 
 ```bash
 npm install
 npm run typecheck
-npm run probe        # 脱离 daemon，直接跑 discover() + fetch() 并打印结果
-npm run probe -- 500 # 指定百分比分母试算
+npm run probe         # 脱离 daemon，直接跑 discover() + fetch() 并打印结果
+npm run probe -- 500  # 指定百分比分母试算
 ```
 
-安装到本机 daemon：
+开发时用本地目录装（`paseo plugin add /absolute/path/to/deepseek-usage`），改完 `paseo plugin reload deepseek-usage` 生效；改到 client 侧代码时，App 可能需要重开一次以拉取新的客户端 bundle。
 
-```bash
-paseo plugin add /absolute/path/to/deepseek-usage
-paseo plugin logs deepseek-usage
-```
-
-改代码后 `paseo plugin reload deepseek-usage` 即可生效（改到 client 侧代码时，App 可能需要重开一次以拉取新的客户端 bundle）。
