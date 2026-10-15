@@ -13,7 +13,7 @@ The plugin reads an existing DeepSeek API key from the stores a DeepSeek tool on
 
 A store pointed at a host other than `api.deepseek.com` is skipped, because a gateway that speaks the chat API has no balance contract.
 
-Each key becomes one account card. The same key found in two stores is one account, so nothing is double counted. The key itself never leaves the daemon: cards are identified by a hash of it.
+Each key becomes one account card. The same key found in two stores is one account, so nothing is double counted. A card is identified by a hash of its key, never by the key itself. The key is sent only to `api.deepseek.com`, as the authorization header of the balance request, and is never part of a report or of anything Paseo sends back to a client.
 
 ## Setup
 

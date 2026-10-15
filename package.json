@@ -1,6 +1,6 @@
 {
   "name": "paseo-plugin-deepseek-usage",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DeepSeek official balance as a Paseo usage source, with an optional budget percentage.",
   "license": "MIT",
   "author": "jixy <467677527@qq.com>",
