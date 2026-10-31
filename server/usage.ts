@@ -13,6 +13,7 @@ import {
   type UsageWindow,
 } from "@getpaseo/plugin/server/usage";
 import { inputSchema, type UsageInput } from "../shared/input.js";
+import { clockLabel, countdownLabel, pricingState } from "../shared/pricing.js";
 import { credentialStores, officialBaseURL, readLogin, storeById, type CredentialStore } from "./stores.js";
 
 /**
@@ -141,6 +142,26 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
         tone: usable ? "ok" : "danger",
       },
     ];
+    const now = Date.now();
+    const pricing = pricingState(now);
+    const offPeak = pricing.phase === "offPeak";
+    details.push(
+      {
+        id: "pricing",
+        label: "Pricing now",
+        value: offPeak
+          ? `Off-peak, half price · peak ${clockLabel(pricing.nextChangeAt, now)}`
+          : `Peak · off-peak ${clockLabel(pricing.nextChangeAt, now)} (in ${countdownLabel(
+              pricing.nextChangeAt.getTime() - now,
+            )})`,
+        tone: offPeak ? "ok" : "warning",
+      },
+      {
+        id: "peak-hours",
+        label: "Peak hours",
+        value: "01:00-04:00 and 06:00-10:00 UTC, Mon-Fri",
+      },
+    );
 
     for (const info of body.balance_infos) {
       const parsed = Number.parseFloat(info.total_balance);

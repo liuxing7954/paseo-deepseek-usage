@@ -1,10 +1,11 @@
 import type { PluginServerContext } from "@getpaseo/plugin/server";
 import { inputSchema } from "./shared/input.js";
-import { budgetMap, budgetSettings } from "./shared/settings.js";
+import { budgetMap, budgetSettings, pricingSettings } from "./shared/settings.js";
 import { createFetchUsage, discover, discoverForSession, type Budgets } from "./server/usage.js";
 
 export default function contribute(server: PluginServerContext) {
   const settings = server.registerSettings(budgetSettings);
+  const pricing = server.registerSettings(pricingSettings);
 
   /**
    * Rejection here means "show no percentage", not "fail the report": an unreadable settings document

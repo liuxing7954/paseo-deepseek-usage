@@ -27,3 +27,18 @@ export function budgetMap(values: BudgetValues): Record<string, number> {
   if (values.usd > 0) budgets.USD = values.usd;
   return budgets;
 }
+
+/**
+ * Whether the sidebar carries a row of its own. The usage card always shows the pricing rows, so this
+ * only answers one question: add the row to the sidebar footer or not.
+ */
+export const pricingSettings = defineSettings({
+  id: "pricing",
+  scope: "host",
+  version: 1,
+  schema: z.object({
+    sidebarRow: z.boolean().default(false),
+  }),
+});
+
+export type PricingValues = z.infer<typeof pricingSettings.schema>;

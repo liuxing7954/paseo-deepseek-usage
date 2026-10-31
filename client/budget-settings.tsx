@@ -1,8 +1,15 @@
 import type { PluginSurfaceProps } from "@getpaseo/plugin/client";
 import { useSettings } from "@getpaseo/plugin/client";
-import { SettingsAction, SettingsCard, SettingsRow, SettingsInput, SettingsSection } from "@getpaseo/plugin/client/ui";
+import {
+  SettingsAction,
+  SettingsCard,
+  SettingsRow,
+  SettingsInput,
+  SettingsSection,
+  SettingsSwitch,
+} from "@getpaseo/plugin/client/ui";
 import { useState } from "react";
-import { budgetSettings } from "../shared/settings";
+import { budgetSettings, pricingSettings } from "../shared/settings";
 
 /** Parses one field: blank means "no gauge for this currency", anything else must be a number >= 0. */
 function parseBudget(text: string, label: string): number | string {
@@ -15,6 +22,7 @@ function parseBudget(text: string, label: string): number | string {
 
 export function BudgetSettingsScreen({ theme }: PluginSurfaceProps) {
   const settings = useSettings(budgetSettings);
+  const pricing = useSettings(pricingSettings);
   const [cny, setCny] = useState<string>();
   const [usd, setUsd] = useState<string>();
   const [problem, setProblem] = useState<string | null>(null);
@@ -64,6 +72,28 @@ export function BudgetSettingsScreen({ theme }: PluginSurfaceProps) {
 
   return (
     <>
+      <SettingsSection
+        title="Pricing indicator"
+        info="The usage card always shows the current price window; the sidebar row is optional and updates every 30 seconds."
+      >
+        <SettingsCard>
+          {pricing.status === "ready" ? (
+            <SettingsSwitch
+              label="Sidebar row"
+              hint="Also show the price window in the sidebar footer, next to the balance."
+              value={pricing.values.sidebarRow}
+              onValueChange={(sidebarRow) => void pricing.save({ sidebarRow }, pricing.revision)}
+              disabled={pricing.saving}
+              error={pricing.saveError ?? undefined}
+            />
+          ) : pricing.status === "loading" ? (
+            <SettingsRow label="Loading…" />
+          ) : (
+            <SettingsRow label="Settings could not be read" error={pricing.error} />
+          )}
+        </SettingsCard>
+      </SettingsSection>
+
       <SettingsSection
         title="Budget denominators"
         info="The balance endpoint reports no quota, so a percentage can only be measured against a denominator you choose"
