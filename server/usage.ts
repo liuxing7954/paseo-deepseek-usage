@@ -120,7 +120,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
 
     const body = BalanceResponseSchema.parse(await response.json());
     if (body.balance_infos.length === 0) {
-      return unavailable({ kind: "no_quota", detail: "这个账号没有返回余额信息" });
+      return unavailable({ kind: "no_quota", detail: "This account returned no balance information" });
     }
 
     const budgets = await readBudgets();
@@ -136,8 +136,8 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
     const details: UsageDetail[] = [
       {
         id: "status",
-        label: "状态",
-        value: usable ? "可用" : "余额不足，API 已停用",
+        label: "Status",
+        value: usable ? "Available" : "Insufficient balance, API disabled",
         tone: usable ? "ok" : "danger",
       },
     ];
@@ -147,7 +147,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
     const remaining = Number.isFinite(parsed) ? parsed : null;
     balances.push({
       id: `total:${info.currency}`,
-      label: `余额 (${info.currency})`,
+      label: `Balance (${info.currency})`,
       remaining,
       // The contract has no CNY unit, so the amount rides on `credits` and the label carries the
       // currency; every exact figure is repeated in `details` with its symbol.
@@ -156,7 +156,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
     });
     details.push({
       id: `total:${info.currency}`,
-      label: `总余额 (${info.currency})`,
+      label: `Total balance (${info.currency})`,
       value: formatAmount(info.currency, info.total_balance),
     });
 
@@ -168,7 +168,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
       windows.push(
         windowFromUsedPct({
           id: `budget:${info.currency}:${accountScope}`,
-          label: `余额 · 预算 ${budget}`,
+          label: `Balance · budget ${budget}`,
           shortLabel: CURRENCY_SYMBOL[info.currency] ?? info.currency,
           summary: true,
           utilizationPct: usedPct,
@@ -177,21 +177,21 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
       );
       details.push({
         id: `budget:${info.currency}`,
-        label: "预算（用于百分比）",
+        label: "Budget (percentage basis)",
         value: formatAmount(info.currency, String(budget)),
       });
     }
     if (info.topped_up_balance !== undefined) {
       details.push({
         id: `topped_up:${info.currency}`,
-        label: "充值余额",
+        label: "Topped-up balance",
         value: formatAmount(info.currency, info.topped_up_balance),
       });
     }
     if (info.granted_balance !== undefined) {
       details.push({
         id: `granted:${info.currency}`,
-        label: "赠送余额",
+        label: "Granted balance",
         value: formatAmount(info.currency, info.granted_balance),
       });
     }
@@ -199,7 +199,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
 
     return {
       status: "available",
-      planLabel: usable ? "DeepSeek 开放平台" : "DeepSeek 开放平台 · 已停用",
+      planLabel: usable ? "DeepSeek Platform" : "DeepSeek Platform · disabled",
       windows,
       balances,
       details,

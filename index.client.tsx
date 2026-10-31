@@ -4,7 +4,7 @@ import { BudgetSettingsScreen } from "./client/budget-settings";
 export default function contribute(client: PluginClientContext) {
   client.addSettingsScreen({
     id: "budget",
-    title: "DeepSeek 预算",
+    title: "DeepSeek",
     icon: "Coins",
     Component: BudgetSettingsScreen,
   });
