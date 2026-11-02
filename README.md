@@ -81,7 +81,7 @@ Chinese public holidays come from the table in `shared/pricing.ts`, currently th
 
 ### Install
 
-Published on npm (currently `0.1.1`; the `0.2.0` described here is local and not published yet):
+Published on npm (`0.2.0`):
 
 ```bash
 paseo plugin add npm:paseo-plugin-deepseek-usage
@@ -203,7 +203,7 @@ DeepSeek 在高峰时段的价格是低谷的两倍，插件可以把这个状�
 
 ### 安装
 
-已发布到 npm（当前 0.1.1；本文对应的 0.2.0 还在本地，尚未发布）：
+已发布到 npm（0.2.0）：
 
 ```bash
 paseo plugin add npm:paseo-plugin-deepseek-usage
