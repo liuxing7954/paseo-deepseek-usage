@@ -32,6 +32,14 @@ The percentage is always relative to your own number, never presented as a provi
 
 To keep the gauge in the sidebar footer, turn on Summary in sidebar in the Usage screen and pin the window.
 
+## Peak and off-peak pricing
+
+DeepSeek bills half price outside peak hours, and the usage card always says which side of that boundary you are on: a Pricing now row shows the current phase and a relative countdown to the next change, with the schedule (01:00 to 04:00 and 06:00 to 10:00 UTC, Monday to Friday) on the row below. The countdown is independent of the daemon's time zone; the sidebar row and its popover format their own local time. Those rows travel with the usage report, so they are at most five minutes stale, or current right after pressing Refresh on the card.
+
+Turning on Sidebar row in Settings, Plugins, DeepSeek adds a footer row as well: DeepSeek off-peak with a moon icon and minus 50 percent, or DeepSeek peak with a sun icon and the time until off-peak returns. Pressing it opens the schedule and the price per million tokens for both tiers. The sidebar row updates every 30 seconds and never touches the network.
+
+Chinese public holidays come from a table in `shared/pricing.ts` that currently holds the 2026 State Council schedule, so a holiday added after that date is treated as an ordinary weekday until the table is extended. Nothing here reads your token usage.
+
 ## Limits
 
 - Balance only. DeepSeek does not expose per-request spend through this endpoint, so there is no usage history or burn rate.

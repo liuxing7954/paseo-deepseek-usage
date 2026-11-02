@@ -38,6 +38,7 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test scripts/pricing.test.mjs",
     "probe": "tsc --outDir .probe-build --noEmit false && node .probe-build/scripts/probe.js"
   },
   "devDependencies": {

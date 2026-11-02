@@ -20,7 +20,7 @@ import {
 import { BudgetSettingsSection } from "./budget-settings";
 
 const STORE_LABEL: Record<AutoAccountView["store"], string> = {
-  env: "环境变量 DEEPSEEK_API_KEY",
+  env: "Environment variable DEEPSEEK_API_KEY",
   dsh: "~/.dsh/.credentials.yaml",
   opencode: "~/.config/opencode/opencode.json",
   "deepseek-cli": "~/.deepseek/config.toml",
@@ -85,7 +85,7 @@ function AccountsSection() {
     if (addBusy) return;
     const key = addKey.trim();
     if (key === "") {
-      setAddError("请填写 API Key");
+      setAddError("Please enter an API key");
       return;
     }
 
@@ -97,7 +97,7 @@ function AccountsSection() {
       setFormKey((value) => value + 1);
       setAddLabel("");
       setAddKey("");
-      setNotice("已添加。打开 Usage 面板，或点用量卡片上的刷新按钮即可看到。");
+      setNotice("Added. Open the Usage panel, or press Refresh on the usage card to see it.");
       await load();
     } catch (error) {
       setAddError(describeError(error));
@@ -133,7 +133,7 @@ function AccountsSection() {
       setEditing(null);
       setEditKey("");
       setConfirmDelete(false);
-      setNotice("已保存修改。");
+      setNotice("Changes saved.");
       await load();
     } catch (error) {
       setEditError(describeError(error));
@@ -157,7 +157,7 @@ function AccountsSection() {
       setEditing(null);
       setEditKey("");
       setConfirmDelete(false);
-      setNotice(result.removed ? "已从监控列表删除。" : "这个 Key 已经不在了。");
+      setNotice(result.removed ? "Removed from the monitored list." : "This key is no longer there.");
       await load();
     } catch (error) {
       setEditError(describeError(error));
@@ -169,30 +169,30 @@ function AccountsSection() {
   return (
     <>
       <SettingsSection
-        title="监控的 Key"
-        info="手动添加的 Key 保存在 daemon 的 Paseo 数据目录（默认 ~/.paseo/deepseek-usage/accounts.json，权限 0600），不写进插件设置，也不会出现在用量报告里。"
+        title="Monitored keys"
+        info="Manually added keys are stored on the daemon under the Paseo data directory (by default ~/.paseo/deepseek-usage/accounts.json, mode 0600). They are not written to plugin settings and never appear in usage reports."
       >
         <SettingsCard>
           {notice ? <SettingsRow label={notice} /> : null}
-          {loading && !view ? <SettingsRow label="读取中…" /> : null}
+          {loading && !view ? <SettingsRow label="Loading…" /> : null}
           {listError ? (
             <>
-              <SettingsRow label="读取失败" error={listError} />
-              <SettingsAction label="重试" actionLabel="重试" onPress={() => void load()} />
+              <SettingsRow label="Could not read the list" error={listError} />
+              <SettingsAction label="Retry" actionLabel="Retry" onPress={() => void load()} />
             </>
           ) : null}
           {view && view.manual.length === 0 ? (
             <SettingsRow
-              label="还没有手动添加的 Key"
-              hint="在下面的「添加 Key」里填一个官方 API Key 就能加入监控。"
+              label="No manually added keys yet"
+              hint="Add an official API key in the Add key section below."
             />
           ) : null}
           {view?.manual.map((account) => (
             <SettingsAction
               key={account.id}
               label={account.label}
-              hint={`${account.keyHint} · 更新于 ${formatDate(account.updatedAt)}`}
-              actionLabel="编辑"
+              hint={`${account.keyHint} · updated ${formatDate(account.updatedAt)}`}
+              actionLabel="Edit"
               onPress={() => beginEdit(account)}
             />
           ))}
@@ -201,41 +201,41 @@ function AccountsSection() {
 
       {editing ? (
         <SettingsSection
-          title={`编辑「${editing.label}」`}
-          info="替换 Key 会生成一张新的账号卡片；留空表示只改名称。"
+          title={`Edit "${editing.label}"`}
+          info="Replacing the key creates a new account card; leave it blank to change only the name."
         >
           <SettingsCard>
             <SettingsInput
               key={`edit-label-${editing.id}-${formKey}`}
-              label="名称"
+              label="Name"
               initialValue={editing.label}
               onChangeText={setEditLabel}
             />
             <SettingsInput
               key={`edit-key-${editing.id}-${formKey}`}
-              label="替换 Key（可选）"
-              hint="留空 = 不改；填了会用新 Key 替换旧 Key。"
+              label="Replace key (optional)"
+              hint="Blank = keep the current key. Filling it replaces the old key."
               placeholder="sk-..."
               secureTextEntry
               onChangeText={setEditKey}
             />
             <SettingsAction
-              label="保存修改"
-              actionLabel={editBusy ? "保存中…" : "保存"}
+              label="Save changes"
+              actionLabel={editBusy ? "Saving…" : "Save"}
               error={editError ?? undefined}
               onPress={() => void saveEdit()}
               disabled={editBusy}
             />
             <SettingsAction
-              label="删除这个 Key"
-              hint="只从插件列表移除，不会动 DeepSeek 账号本身。"
-              actionLabel={confirmDelete ? "确认删除" : "删除"}
+              label="Delete this key"
+              hint="Removes it from this plugin only; the DeepSeek account is not touched."
+              actionLabel={confirmDelete ? "Confirm delete" : "Delete"}
               onPress={() => void deleteEditing()}
               disabled={editBusy}
             />
             <SettingsAction
-              label="不修改了"
-              actionLabel="取消"
+              label="Cancel"
+              actionLabel="Cancel"
               onPress={cancelEdit}
               disabled={editBusy}
             />
@@ -244,28 +244,28 @@ function AccountsSection() {
       ) : null}
 
       <SettingsSection
-        title="添加 Key"
-        info="只接受 api.deepseek.com 的官方 Key；同一把 Key 出现在多个来源时只会生成一张卡片。"
+        title="Add key"
+        info="Only official api.deepseek.com keys are accepted. The same key from several sources still produces one card."
       >
         <SettingsCard>
           <SettingsInput
             key={`add-label-${formKey}`}
-            label="名称（可选）"
-            hint="显示在用量卡片上，方便区分多个账号。留空会显示「自定义 Key」。"
-            placeholder="例如：备用账号"
+            label="Name (optional)"
+            hint={'Shown on the usage card so multiple accounts are easy to tell apart. Blank shows "Manual key".'}
+            placeholder="e.g. Backup account"
             onChangeText={setAddLabel}
           />
           <SettingsInput
             key={`add-key-${formKey}`}
             label="API Key"
-            hint="只发送给 api.deepseek.com，不会写进插件设置。"
+            hint="Sent only to api.deepseek.com; never written to plugin settings."
             placeholder="sk-..."
             secureTextEntry
             onChangeText={setAddKey}
           />
           <SettingsAction
-            label="添加到监控"
-            actionLabel={addBusy ? "添加中…" : "添加"}
+            label="Add to monitored keys"
+            actionLabel={addBusy ? "Adding…" : "Add"}
             error={addError ?? undefined}
             onPress={() => void add()}
             disabled={addBusy}
@@ -275,8 +275,8 @@ function AccountsSection() {
 
 
       <SettingsSection
-        title="自动发现的 Key"
-        info="从本机已有工具的配置里读取，插件只读，不会修改这些文件。与手动 Key 重复时只显示手动那一条。"
+        title="Auto-discovered keys"
+        info="Read from tools already configured on this machine. The plugin never writes to those files. If a key duplicates a manual one, only the manual entry is shown."
       >
         <SettingsCard>
           {view?.auto.map((account) => (
@@ -288,14 +288,14 @@ function AccountsSection() {
           ))}
           {view && view.auto.length === 0 ? (
             <SettingsRow
-              label="没有自动发现 Key"
-              hint="可以手动添加，或按 README 配置环境变量 / 已有工具的凭据文件。"
+              label="No auto-discovered keys"
+              hint="Add one manually, or configure the environment variable / an existing tool's credential file as described in the README."
             />
           ) : null}
           <SettingsAction
-            label="刷新列表"
-            hint="添加或删除后也会自动刷新。"
-            actionLabel={loading ? "读取中…" : "刷新"}
+            label="Refresh list"
+            hint="Also refreshes automatically after adding or deleting."
+            actionLabel={loading ? "Loading…" : "Refresh"}
             onPress={() => void load()}
             disabled={loading}
           />

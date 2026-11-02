@@ -2,7 +2,7 @@
 
 Paseo 的 **DeepSeek 官方余额**用量源（usage source）插件。装好后，Paseo 的用量面板会多出一张 DeepSeek 卡片，显示 `api.deepseek.com` 账号的实时余额。
 
-需要 **Paseo ≥ 0.11.0**（用量源 API 是 0.11 引入的）。server 侧提供用量源、凭据管理与设置，client 侧贡献一个设置页（手动 Key 管理 + 预算）。
+需要 **Paseo ≥ 0.11.0**（用量源 API 是 0.11 引入的）。server 侧提供用量源、凭据管理与设置，client 侧贡献一个设置页（Monitored keys、定价开关与预算）。
 
 > 非官方项目，与 DeepSeek 无关联。图标取自 DeepSeek 官方 wordmark 中的鲸鱼路径，仅用于标识本插件展示的是 DeepSeek 账号。
 
@@ -26,14 +26,14 @@ Paseo 的 **DeepSeek 官方余额**用量源（usage source）插件。装好后
 
 ### 手动添加要监控的 Key
 
-如果 Key 不在上面任何仓库里，可以在 **设置 → Plugins → DeepSeek → 监控的 Key** 里手动添加：
+如果 Key 不在上面任何仓库里，可以在 **设置 → Plugins → DeepSeek → Monitored keys** 里手动添加：
 
-- 填名称（可选）和 API Key，点「添加」。同一把 Key 在多个来源出现时只生成一张卡片，手动添加的标签优先。
+- 填名称（可选）和 API Key，点 `Add`。同一把 Key 在多个来源出现时只生成一张卡片，手动添加的标签优先。
 - Key 保存在 daemon 的 Paseo 数据目录，默认 `~/.paseo/deepseek-usage/accounts.json`，目录 `0700`、文件 `0600`。它**不写进插件 settings**（Paseo 的 settings 是普通 host 侧 JSON，不是密码库），也不会出现在 input / report 里。
 - 只接受 `api.deepseek.com` 的官方 Key，插件不会把 Key 发到第三方网关。
 - 手动 Key 只在这台 daemon 上生效；换机器要重新添加。
 - 添加、替换或删除后，打开 Usage 面板即可；报告仍有 5 分钟缓存，点用量卡片上的刷新按钮可以立即更新。替换 Key 会生成新的账号卡片。
-- 「自动发现的 Key」区域会列出当前从本机工具里读到的账号，以及各自来自哪个文件；这些文件插件只读不写。
+- `Auto-discovered keys` 区域会列出当前从本机工具里读到的账号，以及各自来自哪个文件；这些文件插件只读不写。
 
 ## 会话级发现
 
@@ -50,12 +50,12 @@ Paseo 的 **DeepSeek 官方余额**用量源（usage source）插件。装好后
 
 - `balances`：每个币种一行，`remaining = total_balance`。契约里的 `unit` 只有 `usd | credits | requests | tokens`，**没有 CNY**，所以金额挂在 `credits` 上、币种由 label 与 `details` 承载。
 - `windows`：**预算百分比**（见下）。
-- `details`：`总余额 / 充值余额 / 赠送余额`（带 `¥` / `$` 符号，原样呈现）+ 账号状态 + 预算值。
+- `details`：`总余额 / 充值余额 / 赠送余额`（带 `¥` / `$` 符号，原样呈现）+ 账号状态 + 预算值 + `Pricing now` / `Peak hours`。
 - `is_available: false` 时余额照常显示，但状态与色调标红。
 
 ### 预算百分比（可在 App 里设置）
 
-官方接口**没有额度上限**，所以余额本身算不出百分比。Paseo 的侧边栏常驻摘要又只认「有百分比的 window」（客户端逻辑：`windows.filter(w => displayPercent(w, displayAs) !== null)`，再取 `summary: true` 的作为默认 pin），因此这里引入了一个**显示用**的分母，由你在 **设置 → Plugins → DeepSeek → 预算分母** 里填：
+官方接口**没有额度上限**，所以余额本身算不出百分比。Paseo 的侧边栏常驻摘要又只认「有百分比的 window」（客户端逻辑：`windows.filter(w => displayPercent(w, displayAs) !== null)`，再取 `summary: true` 的作为默认 pin），因此这里引入了一个**显示用**的分母，由你在 **设置 → Plugins → DeepSeek → Budget denominators** 里填：
 
 ```ts
 // shared/settings.ts
@@ -74,6 +74,16 @@ schema: z.object({
 
 侧边栏要真正显示，还得在 **Usage 面板**里打开 `Summary in sidebar` 开关（提示语：*Pinned windows show in the sidebar footer*），并按喜好选择 `Percentages: Used / Remaining`。
 
+### 高峰 / 低谷时段（可在 App 里设置）
+
+DeepSeek 在高峰时段的价格是低谷的两倍，插件可以把这个状态显示出来：
+
+- **用量卡片**：`Pricing now`（现在是高峰还是低谷、下次切换的倒计时）+ `Peak hours`（具体时段）
+- **侧边栏**（可选）：底部多一行 `DeepSeek off-peak` / `DeepSeek peak`，点开是完整价目表
+
+卡片那两行默认就有；侧边栏那行是可选的，在 **设置 → Plugins → DeepSeek → Pricing indicator** 里打开 `Sidebar row` 开关即可。侧边栏每 30 秒按本地时钟重算，不走网络；卡片那两行跟着用量报告刷新（5 分钟缓存，点卡片上的刷新按钮立即生效）。卡片里的倒计时与 daemon 时区无关；侧边栏和弹层里的具体时间按客户端本地时区显示。
+
+高峰时段是 UTC 周一至周五 **01:00-04:00 与 06:00-10:00**，中国法定节假日除外；其余时间都是低谷，周末与法定节假日全天低谷。节假日表写在 `shared/pricing.ts`，目前是 2026 年的安排，下一次国务院通知发布后需要补上。
 
 ## 安装
 
@@ -94,6 +104,7 @@ paseo plugin add git:liuxing7954/paseo-deepseek-usage
 ```bash
 npm install
 npm run typecheck
+npm test              # 高峰/低谷时段与长假边界
 npm run probe         # 脱离 daemon，直接跑 discover() + fetch() 并打印结果（含手动 Key）
 npm run probe -- 500  # 指定百分比分母试算
 ```

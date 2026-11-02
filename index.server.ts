@@ -1,12 +1,13 @@
 import type { PluginServerContext } from "@getpaseo/plugin/server";
 import { addAccount, listAccounts, removeAccount, updateAccount } from "./shared/accounts.js";
 import { inputSchema } from "./shared/input.js";
-import { budgetMap, budgetSettings } from "./shared/settings.js";
+import { budgetMap, budgetSettings, pricingSettings } from "./shared/settings.js";
 import { addAccountView, listAccountViews, removeAccountView, updateAccountView } from "./server/accounts.js";
 import { createFetchUsage, discover, discoverForSession, type Budgets } from "./server/usage.js";
 
 export default function contribute(server: PluginServerContext) {
   const settings = server.registerSettings(budgetSettings);
+  server.registerSettings(pricingSettings);
 
   /**
    * Rejection here means "show no percentage", not "fail the report": an unreadable settings document

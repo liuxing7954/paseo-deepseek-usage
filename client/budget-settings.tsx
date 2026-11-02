@@ -1,20 +1,28 @@
 import type { PluginSurfaceProps } from "@getpaseo/plugin/client";
 import { useSettings } from "@getpaseo/plugin/client";
-import { SettingsAction, SettingsCard, SettingsRow, SettingsInput, SettingsSection } from "@getpaseo/plugin/client/ui";
+import {
+  SettingsAction,
+  SettingsCard,
+  SettingsRow,
+  SettingsInput,
+  SettingsSection,
+  SettingsSwitch,
+} from "@getpaseo/plugin/client/ui";
 import { useState } from "react";
-import { budgetSettings } from "../shared/settings";
+import { budgetSettings, pricingSettings } from "../shared/settings";
 
 /** Parses one field: blank means "no gauge for this currency", anything else must be a number >= 0. */
 function parseBudget(text: string, label: string): number | string {
   const trimmed = text.trim();
   if (trimmed === "") return 0;
   const value = Number(trimmed);
-  if (!Number.isFinite(value) || value < 0) return `${label} 需要填一个 ≥ 0 的数字`;
+  if (!Number.isFinite(value) || value < 0) return `${label} must be a number ≥ 0`;
   return value;
 }
 
 export function BudgetSettingsSection({ theme }: PluginSurfaceProps) {
   const settings = useSettings(budgetSettings);
+  const pricing = useSettings(pricingSettings);
   const [cny, setCny] = useState<string>();
   const [usd, setUsd] = useState<string>();
   const [problem, setProblem] = useState<string | null>(null);
@@ -22,9 +30,9 @@ export function BudgetSettingsSection({ theme }: PluginSurfaceProps) {
 
   const onSave = async () => {
     if (settings.status !== "ready") return;
-    const nextCny = parseBudget(cny ?? String(settings.values.cny), "CNY 预算");
+    const nextCny = parseBudget(cny ?? String(settings.values.cny), "CNY budget");
     if (typeof nextCny === "string") return setProblem(nextCny);
-    const nextUsd = parseBudget(usd ?? String(settings.values.usd), "USD 预算");
+    const nextUsd = parseBudget(usd ?? String(settings.values.usd), "USD budget");
     if (typeof nextUsd === "string") return setProblem(nextUsd);
 
     setProblem(null);
@@ -33,9 +41,9 @@ export function BudgetSettingsSection({ theme }: PluginSurfaceProps) {
 
   if (settings.status === "loading") {
     return (
-      <SettingsSection title="预算分母">
+      <SettingsSection title="Budget denominators">
         <SettingsCard>
-          <SettingsRow label="读取中…" />
+          <SettingsRow label="Loading…" />
         </SettingsCard>
       </SettingsSection>
     );
@@ -44,10 +52,19 @@ export function BudgetSettingsSection({ theme }: PluginSurfaceProps) {
   if (settings.status === "invalid" || settings.status === "error") {
     const message = settings.status === "invalid" ? settings.error : settings.error;
     return (
-      <SettingsSection title="预算分母">
+      <SettingsSection title="Budget denominators">
         <SettingsCard>
-          <SettingsRow label="设置读不出来" error={message} hint="重置会把它恢复成默认值（CNY 100）" />
-          <SettingsAction label="重置" actionLabel={settings.saving ? "重置中…" : "重置"} onPress={() => void settings.reset()} disabled={settings.saving} />
+          <SettingsRow
+            label="Settings could not be read"
+            error={message}
+            hint="Resetting restores the defaults (CNY 100)"
+          />
+          <SettingsAction
+            label="Reset"
+            actionLabel={settings.saving ? "Resetting…" : "Reset"}
+            onPress={() => void settings.reset()}
+            disabled={settings.saving}
+          />
         </SettingsCard>
       </SettingsSection>
     );
@@ -55,11 +72,36 @@ export function BudgetSettingsSection({ theme }: PluginSurfaceProps) {
 
   return (
     <>
-      <SettingsSection title="预算分母" info="余额接口不返回额度上限，百分比只能相对一个你选定的分母；这个分母对所有监控账号生效">
+      <SettingsSection
+        title="Pricing indicator"
+        info="The usage card always shows the current price window; the sidebar row is optional and updates every 30 seconds."
+      >
+        <SettingsCard>
+          {pricing.status === "ready" ? (
+            <SettingsSwitch
+              label="Sidebar row"
+              hint="Also show the price window in the sidebar footer, next to the balance."
+              value={pricing.values.sidebarRow}
+              onValueChange={(sidebarRow) => void pricing.save({ sidebarRow }, pricing.revision)}
+              disabled={pricing.saving}
+              error={pricing.saveError ?? undefined}
+            />
+          ) : pricing.status === "loading" ? (
+            <SettingsRow label="Loading…" />
+          ) : (
+            <SettingsRow label="Settings could not be read" error={pricing.error} />
+          )}
+        </SettingsCard>
+      </SettingsSection>
+
+      <SettingsSection
+        title="Budget denominators"
+        info="The balance endpoint reports no quota, so a percentage can only be measured against a denominator you choose. It applies to every monitored account."
+      >
         <SettingsCard>
           <SettingsInput
-            label="CNY 预算"
-            hint="人民币余额的百分比分母，例如 100。留空或填 0 = 不显示百分比。"
+            label="CNY budget"
+            hint="Denominator for the CNY balance percentage, for example 100. Empty or 0 hides the percentage."
             initialValue={String(settings.values.cny)}
             placeholder="100"
             onChangeText={(text) => {
@@ -68,8 +110,8 @@ export function BudgetSettingsSection({ theme }: PluginSurfaceProps) {
             }}
           />
           <SettingsInput
-            label="USD 预算"
-            hint="美元余额的分母。留空或填 0 = 不显示百分比。"
+            label="USD budget"
+            hint="Denominator for the USD balance. Empty or 0 hides the percentage."
             initialValue={String(settings.values.usd)}
             placeholder="0"
             onChangeText={(text) => {
@@ -80,28 +122,36 @@ export function BudgetSettingsSection({ theme }: PluginSurfaceProps) {
         </SettingsCard>
       </SettingsSection>
 
-      <SettingsSection title="保存">
+      <SettingsSection title="Save">
         <SettingsCard>
           <SettingsAction
-            label={saved ? "已保存" : "保存预算"}
-            hint="用量报告有 5 分钟缓存；保存后想立刻看到，点用量卡片上的刷新按钮。"
+            label={saved ? "Saved" : "Save budget"}
+            hint="Usage reports are cached for five minutes; press Refresh on the usage card to see a change immediately."
             error={problem ?? settings.saveError ?? undefined}
-            actionLabel={settings.saving ? "保存中…" : "保存"}
+            actionLabel={settings.saving ? "Saving…" : "Save"}
             onPress={() => void onSave()}
             disabled={settings.saving}
           />
         </SettingsCard>
       </SettingsSection>
 
-      <SettingsSection title="当前生效">
+      <SettingsSection title="Currently applied">
         <SettingsCard>
           <SettingsRow
             label="CNY"
-            hint={settings.values.cny > 0 ? `相对 ¥${settings.values.cny} 计算百分比` : "未设置，不显示百分比"}
+            hint={
+              settings.values.cny > 0
+                ? `Percentage measured against ¥${settings.values.cny}`
+                : "Not set, no percentage shown"
+            }
           />
           <SettingsRow
             label="USD"
-            hint={settings.values.usd > 0 ? `相对 $${settings.values.usd} 计算百分比` : "未设置，不显示百分比"}
+            hint={
+              settings.values.usd > 0
+                ? `Percentage measured against $${settings.values.usd}`
+                : "Not set, no percentage shown"
+            }
           />
         </SettingsCard>
       </SettingsSection>

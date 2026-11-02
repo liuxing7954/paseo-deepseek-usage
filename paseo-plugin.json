@@ -1,7 +1,7 @@
 {
   "id": "deepseek-usage",
   "name": "DeepSeek balance",
-  "description": "Show official DeepSeek balances in Paseo Usage, with extra API keys you add and an optional budget percentage. 在 Paseo 用量面板显示 DeepSeek 官方账号余额，可手动添加要监控的 API Key，并按预算换算百分比。",
+  "description": "Show official DeepSeek balances in Paseo Usage, with peak/off-peak pricing, extra API keys you add, and an optional budget percentage. 在 Paseo 用量面板显示 DeepSeek 官方账号余额，标注高峰/低谷时段，可手动添加要监控的 API Key，并按预算换算百分比。",
   "icon": "assets/icon.png",
   "media": [
     "assets/screenshot-usage.png",
