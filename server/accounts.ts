@@ -25,7 +25,7 @@ export async function listAccountViews(): Promise<AccountsView> {
   for (const account of discovered) {
     const parsed = inputSchema.safeParse(account.input);
     if (!parsed.success || parsed.data.store === "manual") continue;
-    auto.push({ store: parsed.data.store, harness: account.harness ?? "Unknown source" });
+    auto.push({ store: parsed.data.store, harness: account.harness ?? "未知来源" });
   }
   return { manual, auto };
 }

@@ -35,7 +35,7 @@ export function credentialStores(): CredentialStore[] {
     {
       id: "env",
       locator: "DEEPSEEK_API_KEY",
-      harness: "Environment variable",
+      harness: "环境变量",
       baseURL: process.env.DEEPSEEK_BASE_URL ?? OFFICIAL_BASE_URL,
     },
     {

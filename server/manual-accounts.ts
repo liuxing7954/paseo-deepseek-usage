@@ -77,19 +77,19 @@ async function readDocument(): Promise<ManualAccountsDocument> {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return { version: 1, accounts: [] };
     }
-    throw new Error(`Failed to read the manual key file: ${errorMessage(error)}`);
+    throw new Error(`读取手动 Key 文件失败：${errorMessage(error)}`);
   }
 
   let parsedJson: unknown;
   try {
     parsedJson = JSON.parse(text);
   } catch {
-    throw new Error("The manual key file is not valid JSON. Fix or delete it and try again.");
+    throw new Error("手动 Key 文件不是合法的 JSON，请修复或删除后重试");
   }
 
   const parsed = documentSchema.safeParse(parsedJson);
   if (!parsed.success) {
-    throw new Error(`The manual key file has an invalid shape: ${parsed.error.issues[0]?.message ?? "unknown error"}`);
+    throw new Error(`手动 Key 文件格式不正确：${parsed.error.issues[0]?.message ?? "未知错误"}`);
   }
   return parsed.data;
 }
@@ -110,7 +110,7 @@ async function writeDocument(document: ManualAccountsDocument): Promise<void> {
     await rename(temporary, path);
   } catch (error) {
     await unlink(temporary).catch(() => undefined);
-    throw new Error(`Failed to write the manual key file: ${errorMessage(error)}`);
+    throw new Error(`写入手动 Key 文件失败：${errorMessage(error)}`);
   }
 }
 
@@ -120,14 +120,14 @@ function errorMessage(error: unknown): string {
 
 function normalizeLabel(label: string): string {
   const trimmed = label.trim();
-  return trimmed === "" ? "Manual key" : trimmed.slice(0, MAX_LABEL);
+  return trimmed === "" ? "自定义 Key" : trimmed.slice(0, MAX_LABEL);
 }
 
 function normalizeKey(key: string): string {
   const trimmed = key.trim();
-  if (trimmed === "") throw new Error("API key cannot be empty");
-  if (/\s/.test(trimmed)) throw new Error("API key cannot contain whitespace");
-  if (trimmed.length > MAX_KEY) throw new Error("API key is too long");
+  if (trimmed === "") throw new Error("API Key 不能为空");
+  if (/\s/.test(trimmed)) throw new Error("API Key 不能包含空白字符");
+  if (trimmed.length > MAX_KEY) throw new Error("API Key 太长了");
   return trimmed;
 }
 
@@ -164,12 +164,12 @@ export async function addManualAccount(input: AddManualAccountInput): Promise<Ma
   return serialize(async () => {
     const document = await readDocument();
     if (document.accounts.length >= MAX_ACCOUNTS) {
-      throw new Error(`At most ${MAX_ACCOUNTS} manual keys can be added`);
+      throw new Error(`最多只能添加 ${MAX_ACCOUNTS} 个手动 Key`);
     }
 
     const key = normalizeKey(input.key);
     if (document.accounts.some((account) => account.key === key)) {
-      throw new Error("This key is already in the monitored list");
+      throw new Error("这个 Key 已经在监控列表里了");
     }
 
     const now = new Date().toISOString();
@@ -190,7 +190,7 @@ export async function updateManualAccount(input: UpdateManualAccountInput): Prom
   return serialize(async () => {
     const document = await readDocument();
     const index = document.accounts.findIndex((account) => account.id === input.id);
-    if (index === -1) throw new Error("This manual key was not found; it may have been deleted");
+    if (index === -1) throw new Error("没有找到这个手动 Key，可能已经被删除了");
 
     const current = document.accounts[index]!;
     const nextKey = input.key?.trim() ? normalizeKey(input.key) : current.key;
@@ -198,7 +198,7 @@ export async function updateManualAccount(input: UpdateManualAccountInput): Prom
       nextKey !== current.key &&
       document.accounts.some((account, other) => other !== index && account.key === nextKey)
     ) {
-      throw new Error("This key is already in the monitored list");
+      throw new Error("这个 Key 已经在监控列表里了");
     }
 
     const now = new Date().toISOString();

@@ -71,7 +71,7 @@ function accountForManual(account: { id: string; label: string; key: string }): 
   return {
     key: hashAccountKey(account.key),
     label: account.label,
-    harness: "Manual",
+    harness: "手动添加",
     input,
   };
 }
@@ -166,7 +166,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
     let key: string;
     if (input.store === "manual") {
       const account = await readManualAccount(input.locator);
-      if (!account) throw new Error("This manual key has been removed from the monitored list");
+      if (!account) throw new Error("这个手动 Key 已从监控列表里删除");
       key = account.key;
     } else {
       const store = storeById(input.store);
@@ -193,7 +193,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
 
     const body = BalanceResponseSchema.parse(await response.json());
     if (body.balance_infos.length === 0) {
-      return unavailable({ kind: "no_quota", detail: "This account returned no balance information" });
+      return unavailable({ kind: "no_quota", detail: "这个账号没有返回余额信息" });
     }
 
     const budgets = await readBudgets();
@@ -209,8 +209,8 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
     const details: UsageDetail[] = [
       {
         id: "status",
-        label: "Status",
-        value: usable ? "Available" : "Insufficient balance, API disabled",
+        label: "状态",
+        value: usable ? "可用" : "余额不足，API 已停用",
         tone: usable ? "ok" : "danger",
       },
     ];
@@ -224,16 +224,16 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
     details.push(
       {
         id: "pricing",
-        label: "Pricing now",
+        label: "当前时段",
         value: offPeak
-          ? `Off-peak, half price · peak in ${nextChangeIn}`
-          : `Peak · off-peak in ${nextChangeIn}`,
+          ? `低谷 · 半价 · ${nextChangeIn}后进入高峰`
+          : `高峰 · ${nextChangeIn}后进入低谷`,
         tone: offPeak ? "ok" : "warning",
       },
       {
         id: "peak-hours",
-        label: "Peak hours",
-        value: "01:00-04:00 and 06:00-10:00 UTC, Mon-Fri",
+        label: "高峰时段",
+        value: "UTC 周一至周五 01:00-04:00、06:00-10:00",
       },
     );
 
@@ -242,7 +242,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
     const remaining = Number.isFinite(parsed) ? parsed : null;
     balances.push({
       id: `total:${info.currency}`,
-      label: `Balance (${info.currency})`,
+      label: `余额 (${info.currency})`,
       remaining,
       // The contract has no CNY unit, so the amount rides on `credits` and the label carries the
       // currency; every exact figure is repeated in `details` with its symbol.
@@ -251,7 +251,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
     });
     details.push({
       id: `total:${info.currency}`,
-      label: `Total balance (${info.currency})`,
+      label: `总余额 (${info.currency})`,
       value: formatAmount(info.currency, info.total_balance),
     });
 
@@ -263,7 +263,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
       windows.push(
         windowFromUsedPct({
           id: `budget:${info.currency}:${accountScope}`,
-          label: `Balance · budget ${budget}`,
+          label: `余额 · 预算 ${budget}`,
           shortLabel: CURRENCY_SYMBOL[info.currency] ?? info.currency,
           summary: true,
           utilizationPct: usedPct,
@@ -272,21 +272,21 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
       );
       details.push({
         id: `budget:${info.currency}`,
-        label: "Budget (percentage basis)",
+        label: "预算（用于百分比）",
         value: formatAmount(info.currency, String(budget)),
       });
     }
     if (info.topped_up_balance !== undefined) {
       details.push({
         id: `topped_up:${info.currency}`,
-        label: "Topped-up balance",
+        label: "充值余额",
         value: formatAmount(info.currency, info.topped_up_balance),
       });
     }
     if (info.granted_balance !== undefined) {
       details.push({
         id: `granted:${info.currency}`,
-        label: "Granted balance",
+        label: "赠送余额",
         value: formatAmount(info.currency, info.granted_balance),
       });
     }
@@ -294,7 +294,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
 
     return {
       status: "available",
-      planLabel: usable ? "DeepSeek Platform" : "DeepSeek Platform · disabled",
+      planLabel: usable ? "DeepSeek 开放平台" : "DeepSeek 开放平台 · 已停用",
       windows,
       balances,
       details,

@@ -22,10 +22,10 @@ function useNow(): number {
 }
 
 const REASON_LABEL = {
-  weekdayWindow: "a weekday peak window",
-  outsideWindow: "between the peak windows",
-  weekend: "the weekend",
-  holiday: "a Chinese public holiday",
+  weekdayWindow: "工作日高峰时段",
+  outsideWindow: "两个高峰时段之间",
+  weekend: "周末",
+  holiday: "中国法定节假日",
 } as const;
 
 /** The row's own popover: the schedule and both price tiers, so the card can stay lean. */
@@ -33,27 +33,27 @@ export function PricingDetails({ close }: PluginPopoverProps) {
   const now = useNow();
   const state = pricingState(now);
   const offPeak = state.phase === "offPeak";
-  const flips = `${clockLabel(state.nextChangeAt, now)} (in ${countdownLabel(state.nextChangeAt.getTime() - now)})`;
+  const flips = `${clockLabel(state.nextChangeAt, now)}（${countdownLabel(state.nextChangeAt.getTime() - now)}后切换）`;
 
   return (
     <SettingsSection
-      title={offPeak ? "Off-peak pricing" : "Peak pricing"}
-      info={`Peak hours are 01:00-04:00 and 06:00-10:00 UTC, Monday to Friday. Weekends and Chinese public holidays are off-peak all day, and off-peak costs half the peak price.`}
+      title={offPeak ? "低谷价格" : "高峰价格"}
+      info={`高峰时段为 UTC 周一至周五 01:00-04:00、06:00-10:00；周末与中国法定节假日全天低谷，低谷价格是高峰的一半。下面为每 100 万 token 的美元价目；节假日表目前是 2026 年国务院安排。`}
     >
       <SettingsCard>
         <SettingsRow
-          label="Currently"
-          hint={`${offPeak ? "Off-peak" : "Peak"}, because it is ${REASON_LABEL[state.reason]}`}
+          label="当前"
+          hint={`${offPeak ? "低谷" : "高峰"}（${REASON_LABEL[state.reason]}）`}
         />
-        <SettingsRow label={offPeak ? "Peak starts" : "Off-peak starts"} hint={flips} />
+        <SettingsRow label={offPeak ? "高峰开始" : "低谷开始"} hint={flips} />
         {PRICES.map((price) => (
           <SettingsRow
             key={price.model}
             label={price.model}
-            hint={`off-peak ${price.offPeak.cacheHit} hit · ${price.offPeak.cacheMiss} miss · ${price.offPeak.output} out\npeak ${price.peak.cacheHit} hit · ${price.peak.cacheMiss} miss · ${price.peak.output} out`}
+            hint={`低谷 命中 ${price.offPeak.cacheHit} · 未命中 ${price.offPeak.cacheMiss} · 输出 ${price.offPeak.output}\n高峰 命中 ${price.peak.cacheHit} · 未命中 ${price.peak.cacheMiss} · 输出 ${price.peak.output}`}
           />
         ))}
-        <SettingsAction label="Close" actionLabel="Close" onPress={close} />
+        <SettingsAction label="关闭" actionLabel="关闭" onPress={close} />
       </SettingsCard>
     </SettingsSection>
   );
@@ -83,8 +83,8 @@ function PricingRow({ openPopover }: Pick<PluginSidebarItemProps, "openPopover">
       icon={offPeak ? "MoonStar" : "Sun"}
       label={
         offPeak
-          ? "DeepSeek off-peak · −50%"
-          : `DeepSeek peak · ${countdownLabel(state.nextChangeAt.getTime() - now)} left`
+          ? "DeepSeek 低谷 · −50%"
+          : `DeepSeek 高峰 · 还剩 ${countdownLabel(state.nextChangeAt.getTime() - now)}`
       }
       onPress={() => openPopover(PricingDetails)}
     />

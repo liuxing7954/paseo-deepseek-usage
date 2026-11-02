@@ -26,7 +26,7 @@ Keys you add by hand are kept on the daemon under the Paseo home (by default `~/
 
 The balance endpoint reports money, not a quota, so it has no percentage of its own. Paseo's sidebar summary only shows windows that carry a percentage, which is why the plugin offers a gauge measured against a budget you set.
 
-Set the denominator in Settings, Plugins, DeepSeek, under Budget denominators: one field for CNY and one for USD. The denominator applies to every monitored account. Leave a field empty to skip the gauge for that currency, in which case the exact balance still appears. The gauge turns yellow at 70 percent used and red above 90 percent, using the same thresholds Paseo applies to provider quotas.
+Set the denominator in Settings, Plugins, DeepSeek, in the budget section: one field for CNY and one for USD. The denominator applies to every monitored account. Leave a field empty to skip the gauge for that currency, in which case the exact balance still appears. The gauge turns yellow at 70 percent used and red above 90 percent, using the same thresholds Paseo applies to provider quotas.
 
 The percentage is always relative to your own number, never presented as a provider limit. Change it and the card picks it up within five minutes, or immediately after pressing Refresh on the card.
 
@@ -34,9 +34,9 @@ To keep the gauge in the sidebar footer, turn on Summary in sidebar in the Usage
 
 ## Peak and off-peak pricing
 
-DeepSeek bills half price outside peak hours, and the usage card always says which side of that boundary you are on: a Pricing now row shows the current phase and a relative countdown to the next change, with the schedule (01:00 to 04:00 and 06:00 to 10:00 UTC, Monday to Friday) on the row below. The countdown is independent of the daemon's time zone; the sidebar row and its popover format their own local time. Those rows travel with the usage report, so they are at most five minutes stale, or current right after pressing Refresh on the card.
+DeepSeek bills half price outside peak hours, and the usage card always says which side of that boundary you are on: a pricing row shows the current phase and a relative countdown to the next change, with the schedule (01:00 to 04:00 and 06:00 to 10:00 UTC, Monday to Friday) on the row below. The countdown is independent of the daemon's time zone; the sidebar row and its popover format their own local time. Those rows travel with the usage report, so they are at most five minutes stale, or current right after pressing Refresh on the card.
 
-Turning on Sidebar row in Settings, Plugins, DeepSeek adds a footer row as well: DeepSeek off-peak with a moon icon and minus 50 percent, or DeepSeek peak with a sun icon and the time until off-peak returns. Pressing it opens the schedule and the price per million tokens for both tiers. The sidebar row updates every 30 seconds and never touches the network.
+Turning on the sidebar row in Settings, Plugins, DeepSeek adds a footer row as well: an off-peak row with a moon icon and minus 50 percent, or a peak row with a sun icon and the time until off-peak returns. Pressing it opens the schedule and the price per million tokens for both tiers. The sidebar row updates every 30 seconds and never touches the network.
 
 Chinese public holidays come from a table in `shared/pricing.ts` that currently holds the 2026 State Council schedule, so a holiday added after that date is treated as an ordinary weekday until the table is extended. Nothing here reads your token usage.
 
