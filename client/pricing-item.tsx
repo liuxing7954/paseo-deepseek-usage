@@ -1,5 +1,5 @@
 import type { PluginPopoverProps, PluginSidebarItemProps } from "@getpaseo/plugin/client";
-import { useRpc, useSettings, useTranslation } from "@getpaseo/plugin/client";
+import { useSettings, useTranslation } from "@getpaseo/plugin/client";
 import {
   SettingsAction,
   SettingsCard,
@@ -8,9 +8,9 @@ import {
   SidebarRow,
 } from "@getpaseo/plugin/client/ui";
 import { useEffect, useState } from "react";
-import { setLocale } from "../shared/i18n";
 import { PRICES, clockLabel, countdownLabel, pricingState } from "../shared/pricing";
 import { pricingSettings } from "../shared/settings";
+import { LocaleReporter } from "./locale-reporter";
 import { messages } from "./messages";
 
 /** Re-renders on a fixed tick so the row and its countdown stay true without a reload. */
@@ -21,21 +21,6 @@ function useNow(): number {
     return () => clearInterval(timer);
   }, []);
   return now;
-}
-
-/**
- * Keeps the daemon's usage-report language in step with the app language. Mounted even when the
- * sidebar row is hidden, so a language change updates the next report without a reload.
- */
-function LocaleReporter() {
-  const { locale } = useTranslation(messages);
-  const setLocaleRpc = useRpc(setLocale);
-
-  useEffect(() => {
-    void setLocaleRpc({ locale }).catch(() => {});
-  }, [locale, setLocaleRpc]);
-
-  return null;
 }
 
 /** The row's own popover: the schedule and both price tiers, so the card can stay lean. */

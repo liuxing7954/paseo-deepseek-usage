@@ -18,6 +18,7 @@ import {
   type ManualAccountView,
 } from "../shared/accounts";
 import { BudgetSettingsSection } from "./budget-settings";
+import { LocaleReporter } from "./locale-reporter";
 import { messages } from "./messages";
 
 const STORE_HINT: Record<AutoAccountView["store"], string> = {
@@ -316,6 +317,7 @@ function AccountsSection() {
 export function DeepSeekSettingsScreen(props: PluginSurfaceProps) {
   return (
     <>
+      <LocaleReporter />
       <AccountsSection />
       <BudgetSettingsSection {...props} />
     </>
