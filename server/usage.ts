@@ -13,7 +13,15 @@ import {
   type UsageWindow,
 } from "@getpaseo/plugin/server/usage";
 import { inputSchema, type UsageInput } from "../shared/input.js";
-import { credentialStores, officialBaseURL, readLogin, storeById, type CredentialStore } from "./stores.js";
+import { readManualAccount, readManualAccounts } from "./manual-accounts.js";
+import {
+  credentialStores,
+  officialBaseURL,
+  readLogin,
+  storeById,
+  OFFICIAL_BASE_URL,
+  type CredentialStore,
+} from "./stores.js";
 
 /**
  * `GET /user/balance`. Amounts arrive as decimal strings, one entry per currency, and the endpoint
@@ -56,14 +64,60 @@ async function accountFor(store: CredentialStore): Promise<UsageAccount | undefi
   };
 }
 
-/** Every store that currently holds an official DeepSeek key, in preference order. */
+/** Account key and input for one manually added key. The key itself stays in the server-side file. */
+function accountForManual(account: { id: string; label: string; key: string }): UsageAccount {
+  const input: UsageInput = { store: "manual", locator: account.id, baseURL: OFFICIAL_BASE_URL };
+  return {
+    key: hashAccountKey(account.key),
+    label: account.label,
+    harness: "手动添加",
+    input,
+  };
+}
+
+/**
+ * Every key the plugin can monitor, in preference order: keys the user added explicitly first, then
+ * the read-only harness stores. The same key in several places is one account, so the explicit label
+ * wins over the harness name.
+ */
 export async function discover(): Promise<UsageAccount[]> {
   const accounts: UsageAccount[] = [];
+  const seen = new Set<string>();
+
+  let manual: Awaited<ReturnType<typeof readManualAccounts>> = [];
+  try {
+    manual = await readManualAccounts();
+  } catch (error) {
+    // A broken manual file must not hide keys that are still readable from other tools.
+    console.error(
+      "DeepSeek manual accounts could not be read:",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
+  for (const entry of manual) {
+    const account = accountForManual(entry);
+    if (seen.has(account.key)) continue;
+    seen.add(account.key);
+    accounts.push(account);
+  }
+
   for (const store of credentialStores()) {
     const account = await accountFor(store);
-    if (account) accounts.push(account);
+    if (!account || seen.has(account.key)) continue;
+    seen.add(account.key);
+    accounts.push(account);
   }
   return accounts;
+}
+
+/** The read-only harness stores that currently hold a key, after manual duplicates are merged out. */
+export async function discoverAutoAccounts(): Promise<UsageAccount[]> {
+  const accounts = await discover();
+  return accounts.filter((account) => {
+    const parsed = inputSchema.safeParse(account.input);
+    return parsed.success && parsed.data.store !== "manual";
+  });
 }
 
 /**
@@ -102,14 +156,32 @@ export async function discoverForSession(
 export function createFetchUsage(readBudgets: BudgetLookup) {
   return async function fetchUsage(value: unknown): Promise<UsageReport> {
     const input = inputSchema.parse(value);
-    const store = storeById(input.store);
-    if (!store) throw new Error(`Unknown DeepSeek credential store: ${input.store}`);
 
-    const login = await readLogin(store);
-    if (!login) throw new Error("DeepSeek key is no longer in the selected store");
+    // Never trust the input's host: a report is addressed by a locator, and only the official host
+    // has the `/user/balance` contract. This also stops a tampered input from exfiltrating the key.
+    const baseURL = officialBaseURL(input.baseURL);
+    if (!baseURL) throw new Error("Refusing to send a DeepSeek key to a non-official host");
 
-    const response = await fetch(new URL("/user/balance", input.baseURL), {
-      headers: { Authorization: `Bearer ${login.key}`, Accept: "application/json" },
+    let key: string;
+    if (input.store === "manual") {
+      const account = await readManualAccount(input.locator);
+      if (!account) throw new Error("这个手动 Key 已从监控列表里删除");
+      key = account.key;
+    } else {
+      const store = storeById(input.store);
+      if (!store) throw new Error(`Unknown DeepSeek credential store: ${input.store}`);
+
+      const login = await readLogin(store);
+      if (!login) throw new Error("DeepSeek key is no longer in the selected store");
+      // The store may have been re-pointed after discovery; do not send its key anywhere else.
+      if (!officialBaseURL(login.baseURL)) {
+        throw new Error("DeepSeek key store now points at a non-official host");
+      }
+      key = login.key;
+    }
+
+    const response = await fetch(new URL("/user/balance", baseURL), {
+      headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
       signal: AbortSignal.timeout(15_000),
     });
 
@@ -130,7 +202,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
      * is part of a window's quota scope: without it here, pinning one DeepSeek account's gauge pins the
      * others too. This is the same hash that identifies the account card, so it rotates with the card.
      */
-    const accountScope = hashAccountKey(login.key).slice(0, 8);
+    const accountScope = hashAccountKey(key).slice(0, 8);
     const windows: UsageWindow[] = [];
     const balances: UsageBalance[] = [];
     const details: UsageDetail[] = [

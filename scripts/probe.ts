@@ -38,5 +38,7 @@ for (const account of accounts) {
 }
 
 if (accounts.length === 0) {
-  console.log("没有发现任何官方 DeepSeek key（DEEPSEEK_API_KEY / ~/.dsh / opencode / ~/.deepseek）");
+  console.log(
+    "没有发现任何官方 DeepSeek key（手动添加 / DEEPSEEK_API_KEY / ~/.dsh / opencode / ~/.deepseek）",
+  );
 }

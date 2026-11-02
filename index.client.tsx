@@ -1,12 +1,12 @@
 import type { PluginClientContext } from "@getpaseo/plugin/client";
-import { BudgetSettingsScreen } from "./client/budget-settings";
+import { DeepSeekSettingsScreen } from "./client/settings-screen";
 
 export default function contribute(client: PluginClientContext) {
   client.addSettingsScreen({
     id: "budget",
-    title: "DeepSeek 预算",
+    title: "DeepSeek",
     icon: "Coins",
-    Component: BudgetSettingsScreen,
+    Component: DeepSeekSettingsScreen,
   });
   return () => {};
 }

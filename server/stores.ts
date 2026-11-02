@@ -1,12 +1,16 @@
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import type { AutoStoreId } from "../shared/input.js";
 
 /**
  * Credential stores this source knows how to read. A store is a *place*, not a credential: `discover()`
  * reports which stores hold a key, and `fetch()` re-reads the chosen store so a rotated key is picked up.
+ *
+ * Manually added keys are not a store here: they live in the plugin's own file and are addressed by
+ * an entry id, so they never mix with the read-only harness stores.
  */
-export type StoreId = "env" | "dsh" | "opencode" | "deepseek-cli";
+export type StoreId = AutoStoreId;
 
 export interface CredentialStore {
   id: StoreId;

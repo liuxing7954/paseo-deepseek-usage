@@ -13,7 +13,7 @@ function parseBudget(text: string, label: string): number | string {
   return value;
 }
 
-export function BudgetSettingsScreen({ theme }: PluginSurfaceProps) {
+export function BudgetSettingsSection({ theme }: PluginSurfaceProps) {
   const settings = useSettings(budgetSettings);
   const [cny, setCny] = useState<string>();
   const [usd, setUsd] = useState<string>();
@@ -55,7 +55,7 @@ export function BudgetSettingsScreen({ theme }: PluginSurfaceProps) {
 
   return (
     <>
-      <SettingsSection title="预算分母" info="余额接口不返回额度上限，百分比只能相对一个你选定的分母">
+      <SettingsSection title="预算分母" info="余额接口不返回额度上限，百分比只能相对一个你选定的分母；这个分母对所有监控账号生效">
         <SettingsCard>
           <SettingsInput
             label="CNY 预算"

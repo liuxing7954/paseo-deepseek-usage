@@ -2,13 +2,13 @@
 
 Paseo 的 **DeepSeek 官方余额**用量源（usage source）插件。装好后，Paseo 的用量面板会多出一张 DeepSeek 卡片，显示 `api.deepseek.com` 账号的实时余额。
 
-需要 **Paseo ≥ 0.11.0**（用量源 API 是 0.11 引入的）。server 侧提供用量源与设置，client 侧只贡献一个设置页。
+需要 **Paseo ≥ 0.11.0**（用量源 API 是 0.11 引入的）。server 侧提供用量源、凭据管理与设置，client 侧贡献一个设置页（手动 Key 管理 + 预算）。
 
 > 非官方项目，与 DeepSeek 无关联。图标取自 DeepSeek 官方 wordmark 中的鲸鱼路径，仅用于标识本插件展示的是 DeepSeek 账号。
 
 ## 它读哪些凭据仓库
 
-按顺序扫描，命中即算一个账号：
+自动仓库按顺序扫描，手动 Key 优先于自动发现；同一把 key 命中多处只算一个账号：
 
 | store | 位置 | 说明 |
 | --- | --- | --- |
@@ -16,12 +16,24 @@ Paseo 的 **DeepSeek 官方余额**用量源（usage source）插件。装好后
 | `dsh` | `~/.dsh/.credentials.yaml` | DeepSeek Harness 的凭据文件，取 `refs.DEEPSEEK_API_KEY` |
 | `opencode` | `~/.config/opencode/opencode.json` | `provider.deepseek.options.apiKey`（并用它的 `baseURL`） |
 | `deepseek-cli` | `~/.deepseek/config.toml` | 旧版 DeepSeek CLI 的 `api_key` |
+| `manual` | 设置 → Plugins → DeepSeek | 手动添加的官方 Key，存在 `~/.paseo/deepseek-usage/accounts.json`（0600），见下 |
 
 规则与内置源一致：
 
-- **只读**。每次 `fetch()` 重新读仓库，所以 CLI 轮换 token 后能立刻跟上；绝不写回、绝不兑换 refresh token。
-- **凭据不进 input / report**。input 里只有仓库地址；账号身份是 `hashAccountKey(key)`，所以**同一把 key 出现在多个仓库时会合并成一张卡片**。
-- **只认官方域名**。`baseURL` 不是 `api.deepseek.com` 的仓库会被跳过 —— 第三方网关没有 `/user/balance` 契约。
+- **自动发现的仓库只读**。每次 `fetch()` 重新读仓库，所以 CLI 轮换 token 后能立刻跟上；绝不写回、绝不兑换 refresh token。手动 Key 写在插件自己的文件里，不碰这些仓库。
+- **凭据不进 input / report**。input 里只有仓库地址（手动 Key 是随机 entry id）；账号身份是 `hashAccountKey(key)`，所以**同一把 key 出现在多个仓库时会合并成一张卡片**。
+- **只认官方域名**。`baseURL` 不是 `api.deepseek.com` 的仓库会被跳过，`fetch()` 也会拒绝非官方 host —— 第三方网关没有 `/user/balance` 契约。
+
+### 手动添加要监控的 Key
+
+如果 Key 不在上面任何仓库里，可以在 **设置 → Plugins → DeepSeek → 监控的 Key** 里手动添加：
+
+- 填名称（可选）和 API Key，点「添加」。同一把 Key 在多个来源出现时只生成一张卡片，手动添加的标签优先。
+- Key 保存在 daemon 的 Paseo 数据目录，默认 `~/.paseo/deepseek-usage/accounts.json`，目录 `0700`、文件 `0600`。它**不写进插件 settings**（Paseo 的 settings 是普通 host 侧 JSON，不是密码库），也不会出现在 input / report 里。
+- 只接受 `api.deepseek.com` 的官方 Key，插件不会把 Key 发到第三方网关。
+- 手动 Key 只在这台 daemon 上生效；换机器要重新添加。
+- 添加、替换或删除后，打开 Usage 面板即可；报告仍有 5 分钟缓存，点用量卡片上的刷新按钮可以立即更新。替换 Key 会生成新的账号卡片。
+- 「自动发现的 Key」区域会列出当前从本机工具里读到的账号，以及各自来自哪个文件；这些文件插件只读不写。
 
 ## 会话级发现
 
@@ -30,7 +42,7 @@ Paseo 的 **DeepSeek 官方余额**用量源（usage source）插件。装好后
 - `opencode` + 模型 `deepseek/*` → opencode 仓库
 - `deepseek-harness-native`（DSH）→ DSH 凭据仓库
 
-其它 provider 一律返回 `[]`，不会去猜。
+其它 provider 一律返回 `[]`，不会去猜。手动添加的 Key 不参与会话级发现：插件无法从一个 session 判断某个手动 Key 属于哪个 harness，因此它只出现在全局 Usage 面板。
 
 ## 字段映射
 
@@ -43,7 +55,7 @@ Paseo 的 **DeepSeek 官方余额**用量源（usage source）插件。装好后
 
 ### 预算百分比（可在 App 里设置）
 
-官方接口**没有额度上限**，所以余额本身算不出百分比。Paseo 的侧边栏常驻摘要又只认「有百分比的 window」（客户端逻辑：`windows.filter(w => displayPercent(w, displayAs) !== null)`，再取 `summary: true` 的作为默认 pin），因此这里引入了一个**显示用**的分母，由你在 **设置 → Plugins → DeepSeek 预算** 里填：
+官方接口**没有额度上限**，所以余额本身算不出百分比。Paseo 的侧边栏常驻摘要又只认「有百分比的 window」（客户端逻辑：`windows.filter(w => displayPercent(w, displayAs) !== null)`，再取 `summary: true` 的作为默认 pin），因此这里引入了一个**显示用**的分母，由你在 **设置 → Plugins → DeepSeek → 预算分母** 里填：
 
 ```ts
 // shared/settings.ts
@@ -55,6 +67,7 @@ schema: z.object({
 
 - `remainingPct = 余额 / 预算 × 100`，`summary: true` → 默认就进侧边栏摘要
 - 填 0 或留空 = 该币种不生成 window（精确余额照常显示）
+- 这个分母对**所有监控账号**生效；多个账号共用同一个人民币/美元分母
 - 色调走 SDK 的 `toneFromUsedPct`：已用 ≥70% 变黄、>90% 变红
 - **这个分母不是 provider 数据**，永远不会被当作官方额度上限展示
 - 报告有 5 分钟缓存：改完最多 5 分钟生效，或点用量卡片上的刷新按钮立即生效
@@ -81,8 +94,14 @@ paseo plugin add git:liuxing7954/paseo-deepseek-usage
 ```bash
 npm install
 npm run typecheck
-npm run probe         # 脱离 daemon，直接跑 discover() + fetch() 并打印结果
+npm run probe         # 脱离 daemon，直接跑 discover() + fetch() 并打印结果（含手动 Key）
 npm run probe -- 500  # 指定百分比分母试算
+```
+
+`probe` 会读取手动 Key 文件；把 `PASEO_HOME` 指向一个临时目录，就能在不碰真实账号文件的情况下试：
+
+```bash
+PASEO_HOME=/tmp/paseo-test npm run probe
 ```
 
 开发时用本地目录装（`paseo plugin add /absolute/path/to/deepseek-usage`），改完 `paseo plugin reload deepseek-usage` 生效；改到 client 侧代码时，App 可能需要重开一次以拉取新的客户端 bundle。
