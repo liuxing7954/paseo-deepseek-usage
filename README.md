@@ -61,6 +61,16 @@ schema: z.object({
 
 侧边栏要真正显示，还得在 **Usage 面板**里打开 `Summary in sidebar` 开关（提示语：*Pinned windows show in the sidebar footer*），并按喜好选择 `Percentages: Used / Remaining`。
 
+### 高峰 / 低谷时段（可在 App 里设置）
+
+DeepSeek 在高峰时段的价格是低谷的两倍，插件可以把这个状态显示出来：
+
+- **用量卡片**：`Pricing now`（现在是高峰还是低谷、下次切换的本地时间）+ `Peak hours`（具体时段）
+- **侧边栏**（可选）：底部多一行 `DeepSeek off-peak` / `DeepSeek peak`，点开是完整价目表
+
+卡片那两行默认就有；侧边栏那行是可选的，在 **设置 → Plugins → DeepSeek** 里打开 `Sidebar row` 开关即可。侧边栏每 30 秒按本地时钟重算，不走网络；卡片那两行跟着用量报告刷新（5 分钟缓存，点卡片上的刷新按钮立即生效）。
+
+高峰时段是 UTC 周一至周五 **01:00-04:00 与 06:00-10:00**，中国法定节假日除外；其余时间都是低谷，周末与法定节假日全天低谷。节假日表写在 `shared/pricing.ts`，目前是 2026 年的安排，下一次国务院通知发布后需要补上。
 
 ## 安装
 
