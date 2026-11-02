@@ -1,5 +1,5 @@
 import type { PluginPopoverProps, PluginSidebarItemProps } from "@getpaseo/plugin/client";
-import { useSettings } from "@getpaseo/plugin/client";
+import { useRpc, useSettings, useTranslation } from "@getpaseo/plugin/client";
 import {
   SettingsAction,
   SettingsCard,
@@ -8,8 +8,10 @@ import {
   SidebarRow,
 } from "@getpaseo/plugin/client/ui";
 import { useEffect, useState } from "react";
+import { setLocale } from "../shared/i18n";
 import { PRICES, clockLabel, countdownLabel, pricingState } from "../shared/pricing";
 import { pricingSettings } from "../shared/settings";
+import { messages } from "./messages";
 
 /** Re-renders on a fixed tick so the row and its countdown stay true without a reload. */
 function useNow(): number {
@@ -21,39 +23,65 @@ function useNow(): number {
   return now;
 }
 
-const REASON_LABEL = {
-  weekdayWindow: "工作日高峰时段",
-  outsideWindow: "两个高峰时段之间",
-  weekend: "周末",
-  holiday: "中国法定节假日",
-} as const;
+/**
+ * Keeps the daemon's usage-report language in step with the app language. Mounted even when the
+ * sidebar row is hidden, so a language change updates the next report without a reload.
+ */
+function LocaleReporter() {
+  const { locale } = useTranslation(messages);
+  const setLocaleRpc = useRpc(setLocale);
+
+  useEffect(() => {
+    void setLocaleRpc({ locale }).catch(() => {});
+  }, [locale, setLocaleRpc]);
+
+  return null;
+}
 
 /** The row's own popover: the schedule and both price tiers, so the card can stay lean. */
 export function PricingDetails({ close }: PluginPopoverProps) {
+  const { t } = useTranslation(messages);
   const now = useNow();
   const state = pricingState(now);
   const offPeak = state.phase === "offPeak";
-  const flips = `${clockLabel(state.nextChangeAt, now)}（${countdownLabel(state.nextChangeAt.getTime() - now)}后切换）`;
+  const phase = offPeak ? t("pricing.phaseOffPeak") : t("pricing.phasePeak");
+  const reason = {
+    weekdayWindow: t("pricing.reasonWeekdayWindow"),
+    outsideWindow: t("pricing.reasonOutsideWindow"),
+    weekend: t("pricing.reasonWeekend"),
+    holiday: t("pricing.reasonHoliday"),
+  }[state.reason];
+  const flips = t("pricing.flip", {
+    time: clockLabel(state.nextChangeAt, now),
+    countdown: countdownLabel(state.nextChangeAt.getTime() - now),
+  });
 
   return (
     <SettingsSection
-      title={offPeak ? "低谷价格" : "高峰价格"}
-      info={`高峰时段为 UTC 周一至周五 01:00-04:00、06:00-10:00；周末与中国法定节假日全天低谷，低谷价格是高峰的一半。下面为每 100 万 token 的美元价目；节假日表目前是 2026 年国务院安排。`}
+      title={offPeak ? t("pricing.titleOffPeak") : t("pricing.titlePeak")}
+      info={t("pricing.info")}
     >
       <SettingsCard>
+        <SettingsRow label={t("pricing.current")} hint={t("pricing.currentHint", { phase, reason })} />
         <SettingsRow
-          label="当前"
-          hint={`${offPeak ? "低谷" : "高峰"}（${REASON_LABEL[state.reason]}）`}
+          label={offPeak ? t("pricing.startPeak") : t("pricing.startOffPeak")}
+          hint={flips}
         />
-        <SettingsRow label={offPeak ? "高峰开始" : "低谷开始"} hint={flips} />
         {PRICES.map((price) => (
           <SettingsRow
             key={price.model}
             label={price.model}
-            hint={`低谷 命中 ${price.offPeak.cacheHit} · 未命中 ${price.offPeak.cacheMiss} · 输出 ${price.offPeak.output}\n高峰 命中 ${price.peak.cacheHit} · 未命中 ${price.peak.cacheMiss} · 输出 ${price.peak.output}`}
+            hint={t("pricing.priceRow", {
+              offCacheHit: price.offPeak.cacheHit,
+              offCacheMiss: price.offPeak.cacheMiss,
+              offOutput: price.offPeak.output,
+              peakCacheHit: price.peak.cacheHit,
+              peakCacheMiss: price.peak.cacheMiss,
+              peakOutput: price.peak.output,
+            })}
           />
         ))}
-        <SettingsAction label="关闭" actionLabel="关闭" onPress={close} />
+        <SettingsAction label={t("pricing.close")} actionLabel={t("pricing.close")} onPress={close} />
       </SettingsCard>
     </SettingsSection>
   );
@@ -65,12 +93,18 @@ export function PricingDetails({ close }: PluginPopoverProps) {
  */
 export function PricingSidebarItem({ openPopover }: PluginSidebarItemProps) {
   const settings = useSettings(pricingSettings);
-  if (settings.status !== "ready" || !settings.values.sidebarRow) return null;
-  // Mount the clock only when the row is visible: the hidden item would otherwise tick every 30s.
-  return <PricingRow openPopover={openPopover} />;
+  return (
+    <>
+      <LocaleReporter />
+      {settings.status === "ready" && settings.values.sidebarRow ? (
+        <PricingRow openPopover={openPopover} />
+      ) : null}
+    </>
+  );
 }
 
 function PricingRow({ openPopover }: Pick<PluginSidebarItemProps, "openPopover">) {
+  const { t } = useTranslation(messages);
   const now = useNow();
   const state = pricingState(now);
   const offPeak = state.phase === "offPeak";
@@ -83,8 +117,8 @@ function PricingRow({ openPopover }: Pick<PluginSidebarItemProps, "openPopover">
       icon={offPeak ? "MoonStar" : "Sun"}
       label={
         offPeak
-          ? "DeepSeek 低谷 · −50%"
-          : `DeepSeek 高峰 · 还剩 ${countdownLabel(state.nextChangeAt.getTime() - now)}`
+          ? t("sidebar.offPeak")
+          : t("sidebar.peak", { countdown: countdownLabel(state.nextChangeAt.getTime() - now) })
       }
       onPress={() => openPopover(PricingDetails)}
     />

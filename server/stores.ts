@@ -16,8 +16,8 @@ export interface CredentialStore {
   id: StoreId;
   /** Env var name for `env`, absolute file path otherwise. */
   locator: string;
-  /** Display name of the harness that owns the store; used as the account label and error harness. */
-  harness: string;
+  /** Translation key for the harness that owns the store; used as the account label and error harness. */
+  harnessKey: string;
   /** Base URL to prefer when the store itself does not carry one. */
   baseURL: string;
 }
@@ -35,27 +35,27 @@ export function credentialStores(): CredentialStore[] {
     {
       id: "env",
       locator: "DEEPSEEK_API_KEY",
-      harness: "环境变量",
+      harnessKey: "stores.env",
       baseURL: process.env.DEEPSEEK_BASE_URL ?? OFFICIAL_BASE_URL,
     },
     {
       // The DeepSeek Harness keeps its own credential file: `refs:` maps env-style names to secrets.
       id: "dsh",
       locator: join(home, ".dsh", ".credentials.yaml"),
-      harness: "DeepSeek Harness",
+      harnessKey: "stores.dsh",
       baseURL: OFFICIAL_BASE_URL,
     },
     {
       // OpenCode's provider entry for the official API, e.g. provider.deepseek.options.{apiKey,baseURL}.
       id: "opencode",
       locator: join(home, ".config", "opencode", "opencode.json"),
-      harness: "OpenCode",
+      harnessKey: "stores.opencode",
       baseURL: OFFICIAL_BASE_URL,
     },
     {
       id: "deepseek-cli",
       locator: join(home, ".deepseek", "config.toml"),
-      harness: "DeepSeek CLI",
+      harnessKey: "stores.deepseekCli",
       baseURL: OFFICIAL_BASE_URL,
     },
   ];

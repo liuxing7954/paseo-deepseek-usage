@@ -1,7 +1,7 @@
 {
   "name": "paseo-plugin-deepseek-usage",
   "version": "0.2.0",
-  "description": "DeepSeek official balance as a Paseo usage source, with managed API keys and an optional budget percentage.",
+  "description": "DeepSeek official balance as a Paseo usage source, with managed API keys, peak/off-peak pricing, bilingual UI, and an optional budget percentage.",
   "license": "MIT",
   "author": "jixy <467677527@qq.com>",
   "keywords": [
@@ -27,6 +27,7 @@
     "paseo-plugin.json",
     "OVERVIEW.md",
     "README.md",
+    "OVERVIEW.*.md",
     "LICENSE",
     "icon.svg",
     "assets/",
@@ -38,11 +39,13 @@
   ],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test scripts/pricing.test.mjs",
+    "test": "node --experimental-strip-types --test scripts/*.test.mjs",
     "probe": "tsc --outDir .probe-build --noEmit false && node .probe-build/scripts/probe.js"
   },
   "devDependencies": {
-    "@getpaseo/plugin": "0.11.2",
+    "@getpaseo/client": "0.14.0",
+    "@getpaseo/plugin": "0.14.0",
+    "@getpaseo/protocol": "0.14.0",
     "@types/node": "^22.10.2",
     "@types/react": "~19.2.0",
     "typescript": "^5.9.3",

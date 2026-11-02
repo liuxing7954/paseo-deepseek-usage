@@ -1,6 +1,6 @@
 # DeepSeek balance
 
-Shows what is left on your official DeepSeek account inside Paseo's usage surfaces, so you can see the balance next to the quotas Paseo already tracks for Claude, Codex and the rest.
+Shows what is left on your official DeepSeek account inside Paseo's usage surfaces, so you can see the balance next to the quotas Paseo already tracks for Claude, Codex and the rest. The plugin UI and usage-report labels follow the Paseo app language (English or Simplified Chinese).
 
 ## What it reads
 
@@ -18,7 +18,7 @@ Each key becomes one account card. The same key found in two stores is one accou
 
 ## Setup
 
-Install the plugin and open Usage in Paseo. If no key is found, add one under Settings, Plugins, DeepSeek, or export `DEEPSEEK_API_KEY` for the daemon, or sign in once with one of the tools above.
+Install the plugin and open Usage in Paseo. If no key is found, add one under Settings, Plugins, DeepSeek, or export `DEEPSEEK_API_KEY` for the daemon, or sign in once with one of the tools above. The plugin UI follows the app language; usage-report labels update on the next report after a language change.
 
 Keys you add by hand are kept on the daemon under the Paseo home (by default `~/.paseo/deepseek-usage/accounts.json`) with owner-only permissions. The settings screen shows only a masked hint; the key never returns to the app. The plugin's settings documents are not used for credentials.
 

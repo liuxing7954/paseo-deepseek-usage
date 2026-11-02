@@ -4,6 +4,8 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { z } from "zod";
 import type { ManualAccountView } from "../shared/accounts.js";
+import { translate } from "../shared/locales.js";
+import { getReportLocale } from "./locale.js";
 
 /**
  * The plugin's own credential list for keys no local tool has stored.
@@ -16,6 +18,10 @@ import type { ManualAccountView } from "../shared/accounts.js";
 const MAX_ACCOUNTS = 20;
 const MAX_LABEL = 64;
 const MAX_KEY = 512;
+
+function t(key: string, vars?: Record<string, string | number>): string {
+  return translate(getReportLocale(), key, vars);
+}
 
 const manualAccountSchema = z
   .object({
@@ -77,19 +83,23 @@ async function readDocument(): Promise<ManualAccountsDocument> {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return { version: 1, accounts: [] };
     }
-    throw new Error(`读取手动 Key 文件失败：${errorMessage(error)}`);
+    throw new Error(t("manualAccounts.readFailed", { error: errorMessage(error) }));
   }
 
   let parsedJson: unknown;
   try {
     parsedJson = JSON.parse(text);
   } catch {
-    throw new Error("手动 Key 文件不是合法的 JSON，请修复或删除后重试");
+    throw new Error(t("manualAccounts.invalidJson"));
   }
 
   const parsed = documentSchema.safeParse(parsedJson);
   if (!parsed.success) {
-    throw new Error(`手动 Key 文件格式不正确：${parsed.error.issues[0]?.message ?? "未知错误"}`);
+    throw new Error(
+      t("manualAccounts.invalidShape", {
+        error: parsed.error.issues[0]?.message ?? t("manualAccounts.unknownError"),
+      }),
+    );
   }
   return parsed.data;
 }
@@ -110,7 +120,7 @@ async function writeDocument(document: ManualAccountsDocument): Promise<void> {
     await rename(temporary, path);
   } catch (error) {
     await unlink(temporary).catch(() => undefined);
-    throw new Error(`写入手动 Key 文件失败：${errorMessage(error)}`);
+    throw new Error(t("manualAccounts.writeFailed", { error: errorMessage(error) }));
   }
 }
 
@@ -120,14 +130,14 @@ function errorMessage(error: unknown): string {
 
 function normalizeLabel(label: string): string {
   const trimmed = label.trim();
-  return trimmed === "" ? "自定义 Key" : trimmed.slice(0, MAX_LABEL);
+  return trimmed === "" ? t("manualAccounts.defaultLabel") : trimmed.slice(0, MAX_LABEL);
 }
 
 function normalizeKey(key: string): string {
   const trimmed = key.trim();
-  if (trimmed === "") throw new Error("API Key 不能为空");
-  if (/\s/.test(trimmed)) throw new Error("API Key 不能包含空白字符");
-  if (trimmed.length > MAX_KEY) throw new Error("API Key 太长了");
+  if (trimmed === "") throw new Error(t("manualAccounts.emptyKey"));
+  if (/\s/.test(trimmed)) throw new Error(t("manualAccounts.whitespaceKey"));
+  if (trimmed.length > MAX_KEY) throw new Error(t("manualAccounts.longKey"));
   return trimmed;
 }
 
@@ -164,12 +174,12 @@ export async function addManualAccount(input: AddManualAccountInput): Promise<Ma
   return serialize(async () => {
     const document = await readDocument();
     if (document.accounts.length >= MAX_ACCOUNTS) {
-      throw new Error(`最多只能添加 ${MAX_ACCOUNTS} 个手动 Key`);
+      throw new Error(t("manualAccounts.tooMany", { max: MAX_ACCOUNTS }));
     }
 
     const key = normalizeKey(input.key);
     if (document.accounts.some((account) => account.key === key)) {
-      throw new Error("这个 Key 已经在监控列表里了");
+      throw new Error(t("manualAccounts.duplicate"));
     }
 
     const now = new Date().toISOString();
@@ -190,7 +200,7 @@ export async function updateManualAccount(input: UpdateManualAccountInput): Prom
   return serialize(async () => {
     const document = await readDocument();
     const index = document.accounts.findIndex((account) => account.id === input.id);
-    if (index === -1) throw new Error("没有找到这个手动 Key，可能已经被删除了");
+    if (index === -1) throw new Error(t("manualAccounts.notFound"));
 
     const current = document.accounts[index]!;
     const nextKey = input.key?.trim() ? normalizeKey(input.key) : current.key;
@@ -198,7 +208,7 @@ export async function updateManualAccount(input: UpdateManualAccountInput): Prom
       nextKey !== current.key &&
       document.accounts.some((account, other) => other !== index && account.key === nextKey)
     ) {
-      throw new Error("这个 Key 已经在监控列表里了");
+      throw new Error(t("manualAccounts.duplicate"));
     }
 
     const now = new Date().toISOString();

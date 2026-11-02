@@ -20,7 +20,6 @@ export const manualAccountViewSchema = z
 export const autoAccountViewSchema = z
   .object({
     store: autoStoreIdSchema,
-    harness: z.string().min(1),
   })
   .strict();
 

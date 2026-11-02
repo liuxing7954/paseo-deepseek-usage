@@ -13,7 +13,9 @@ import {
   type UsageWindow,
 } from "@getpaseo/plugin/server/usage";
 import { inputSchema, type UsageInput } from "../shared/input.js";
+import { translate } from "../shared/locales.js";
 import { countdownLabel, pricingState } from "../shared/pricing.js";
+import { getReportLocale } from "./locale.js";
 import { readManualAccount, readManualAccounts } from "./manual-accounts.js";
 import {
   credentialStores,
@@ -55,12 +57,13 @@ async function accountFor(store: CredentialStore): Promise<UsageAccount | undefi
   const baseURL = officialBaseURL(login.baseURL);
   if (!baseURL) return undefined;
   const input: UsageInput = { store: store.id, locator: store.locator, baseURL };
+  const harness = translate(getReportLocale(), store.harnessKey);
   return {
     // The key never leaves the daemon: only its hash identifies the account, and hashing makes the
     // same key found in several stores collapse into one account card.
     key: hashAccountKey(login.key),
-    label: store.harness,
-    harness: store.harness,
+    label: harness,
+    harness,
     input,
   };
 }
@@ -68,10 +71,11 @@ async function accountFor(store: CredentialStore): Promise<UsageAccount | undefi
 /** Account key and input for one manually added key. The key itself stays in the server-side file. */
 function accountForManual(account: { id: string; label: string; key: string }): UsageAccount {
   const input: UsageInput = { store: "manual", locator: account.id, baseURL: OFFICIAL_BASE_URL };
+  const harness = translate(getReportLocale(), "stores.manual");
   return {
     key: hashAccountKey(account.key),
     label: account.label,
-    harness: "手动添加",
+    harness,
     input,
   };
 }
@@ -157,26 +161,28 @@ export async function discoverForSession(
 export function createFetchUsage(readBudgets: BudgetLookup) {
   return async function fetchUsage(value: unknown): Promise<UsageReport> {
     const input = inputSchema.parse(value);
+    const locale = getReportLocale();
+    const t = (key: string, vars?: Record<string, string | number>) => translate(locale, key, vars);
 
     // Never trust the input's host: a report is addressed by a locator, and only the official host
     // has the `/user/balance` contract. This also stops a tampered input from exfiltrating the key.
     const baseURL = officialBaseURL(input.baseURL);
-    if (!baseURL) throw new Error("Refusing to send a DeepSeek key to a non-official host");
+    if (!baseURL) throw new Error(t("usage.errorHost"));
 
     let key: string;
     if (input.store === "manual") {
       const account = await readManualAccount(input.locator);
-      if (!account) throw new Error("这个手动 Key 已从监控列表里删除");
+      if (!account) throw new Error(t("usage.manualRemoved"));
       key = account.key;
     } else {
       const store = storeById(input.store);
-      if (!store) throw new Error(`Unknown DeepSeek credential store: ${input.store}`);
+      if (!store) throw new Error(t("usage.errorUnknownStore", { store: input.store }));
 
       const login = await readLogin(store);
-      if (!login) throw new Error("DeepSeek key is no longer in the selected store");
+      if (!login) throw new Error(t("usage.errorStoreMissing"));
       // The store may have been re-pointed after discovery; do not send its key anywhere else.
       if (!officialBaseURL(login.baseURL)) {
-        throw new Error("DeepSeek key store now points at a non-official host");
+        throw new Error(t("usage.errorStoreHost"));
       }
       key = login.key;
     }
@@ -189,11 +195,11 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
     if (response.status === 401 || response.status === 403) {
       return unavailable({ kind: "rejected", status: response.status });
     }
-    if (!response.ok) throw new Error(`DeepSeek balance API returned ${response.status}`);
+    if (!response.ok) throw new Error(t("usage.errorBalanceStatus", { status: response.status }));
 
     const body = BalanceResponseSchema.parse(await response.json());
     if (body.balance_infos.length === 0) {
-      return unavailable({ kind: "no_quota", detail: "这个账号没有返回余额信息" });
+      return unavailable({ kind: "no_quota", detail: t("usage.noQuota") });
     }
 
     const budgets = await readBudgets();
@@ -209,8 +215,8 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
     const details: UsageDetail[] = [
       {
         id: "status",
-        label: "状态",
-        value: usable ? "可用" : "余额不足，API 已停用",
+        label: t("usage.status"),
+        value: usable ? t("usage.available") : t("usage.disabled"),
         tone: usable ? "ok" : "danger",
       },
     ];
@@ -224,16 +230,16 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
     details.push(
       {
         id: "pricing",
-        label: "当前时段",
+        label: t("usage.pricingNow"),
         value: offPeak
-          ? `低谷 · 半价 · ${nextChangeIn}后进入高峰`
-          : `高峰 · ${nextChangeIn}后进入低谷`,
+          ? t("usage.pricingOffPeak", { countdown: nextChangeIn })
+          : t("usage.pricingPeak", { countdown: nextChangeIn }),
         tone: offPeak ? "ok" : "warning",
       },
       {
         id: "peak-hours",
-        label: "高峰时段",
-        value: "UTC 周一至周五 01:00-04:00、06:00-10:00",
+        label: t("usage.peakHours"),
+        value: t("usage.peakHoursValue"),
       },
     );
 
@@ -242,7 +248,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
     const remaining = Number.isFinite(parsed) ? parsed : null;
     balances.push({
       id: `total:${info.currency}`,
-      label: `余额 (${info.currency})`,
+      label: t("usage.balance", { currency: info.currency }),
       remaining,
       // The contract has no CNY unit, so the amount rides on `credits` and the label carries the
       // currency; every exact figure is repeated in `details` with its symbol.
@@ -251,7 +257,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
     });
     details.push({
       id: `total:${info.currency}`,
-      label: `总余额 (${info.currency})`,
+      label: t("usage.totalBalance", { currency: info.currency }),
       value: formatAmount(info.currency, info.total_balance),
     });
 
@@ -263,7 +269,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
       windows.push(
         windowFromUsedPct({
           id: `budget:${info.currency}:${accountScope}`,
-          label: `余额 · 预算 ${budget}`,
+          label: t("usage.windowBudget", { budget }),
           shortLabel: CURRENCY_SYMBOL[info.currency] ?? info.currency,
           summary: true,
           utilizationPct: usedPct,
@@ -272,21 +278,21 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
       );
       details.push({
         id: `budget:${info.currency}`,
-        label: "预算（用于百分比）",
+        label: t("usage.budgetBasis"),
         value: formatAmount(info.currency, String(budget)),
       });
     }
     if (info.topped_up_balance !== undefined) {
       details.push({
         id: `topped_up:${info.currency}`,
-        label: "充值余额",
+        label: t("usage.toppedUp"),
         value: formatAmount(info.currency, info.topped_up_balance),
       });
     }
     if (info.granted_balance !== undefined) {
       details.push({
         id: `granted:${info.currency}`,
-        label: "赠送余额",
+        label: t("usage.granted"),
         value: formatAmount(info.currency, info.granted_balance),
       });
     }
@@ -294,7 +300,7 @@ export function createFetchUsage(readBudgets: BudgetLookup) {
 
     return {
       status: "available",
-      planLabel: usable ? "DeepSeek 开放平台" : "DeepSeek 开放平台 · 已停用",
+      planLabel: usable ? t("usage.plan") : t("usage.planDisabled"),
       windows,
       balances,
       details,

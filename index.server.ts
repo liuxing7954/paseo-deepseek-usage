@@ -1,8 +1,10 @@
 import type { PluginServerContext } from "@getpaseo/plugin/server";
 import { addAccount, listAccounts, removeAccount, updateAccount } from "./shared/accounts.js";
+import { setLocale } from "./shared/i18n.js";
 import { inputSchema } from "./shared/input.js";
 import { budgetMap, budgetSettings, pricingSettings } from "./shared/settings.js";
 import { addAccountView, listAccountViews, removeAccountView, updateAccountView } from "./server/accounts.js";
+import { setReportLocale } from "./server/locale.js";
 import { createFetchUsage, discover, discoverForSession, type Budgets } from "./server/usage.js";
 
 export default function contribute(server: PluginServerContext) {
@@ -21,6 +23,9 @@ export default function contribute(server: PluginServerContext) {
       return {};
     }
   };
+
+  // The client reports its app language; usage report strings are resolved on the daemon.
+  server.handle(setLocale, async ({ locale }) => ({ locale: setReportLocale(locale) }));
 
   // Key management. The handlers own the account file; the client only ever sees masked hints.
   server.handle(listAccounts, async () => listAccountViews());

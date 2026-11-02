@@ -1,5 +1,5 @@
 import type { PluginSurfaceProps } from "@getpaseo/plugin/client";
-import { useRpc } from "@getpaseo/plugin/client";
+import { useRpc, useTranslation } from "@getpaseo/plugin/client";
 import {
   SettingsAction,
   SettingsCard,
@@ -18,9 +18,10 @@ import {
   type ManualAccountView,
 } from "../shared/accounts";
 import { BudgetSettingsSection } from "./budget-settings";
+import { messages } from "./messages";
 
-const STORE_LABEL: Record<AutoAccountView["store"], string> = {
-  env: "环境变量 DEEPSEEK_API_KEY",
+const STORE_HINT: Record<AutoAccountView["store"], string> = {
+  env: "DEEPSEEK_API_KEY",
   dsh: "~/.dsh/.credentials.yaml",
   opencode: "~/.config/opencode/opencode.json",
   "deepseek-cli": "~/.deepseek/config.toml",
@@ -30,9 +31,9 @@ function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function formatDate(iso: string): string {
+function formatDate(iso: string, locale: string): string {
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? iso : date.toLocaleDateString();
+  return Number.isNaN(date.getTime()) ? iso : date.toLocaleDateString(locale);
 }
 
 /**
@@ -40,6 +41,7 @@ function formatDate(iso: string): string {
  * and editing can replace it, but the current key never comes back to the app.
  */
 function AccountsSection() {
+  const { t, locale } = useTranslation(messages);
   const listRpc = useRpc(listAccounts);
   const addRpc = useRpc(addAccount);
   const updateRpc = useRpc(updateAccount);
@@ -81,11 +83,19 @@ function AccountsSection() {
     void load();
   }, [load]);
 
+  const storeLabel = (store: AutoAccountView["store"]) =>
+    ({
+      env: t("stores.env"),
+      dsh: t("stores.dsh"),
+      opencode: t("stores.opencode"),
+      "deepseek-cli": t("stores.deepseekCli"),
+    })[store];
+
   const add = async () => {
     if (addBusy) return;
     const key = addKey.trim();
     if (key === "") {
-      setAddError("请填写 API Key");
+      setAddError(t("settings.keys.keyRequired"));
       return;
     }
 
@@ -97,7 +107,7 @@ function AccountsSection() {
       setFormKey((value) => value + 1);
       setAddLabel("");
       setAddKey("");
-      setNotice("已添加。打开 Usage 面板，或点用量卡片上的刷新按钮即可看到。");
+      setNotice(t("settings.keys.noticeAdded"));
       await load();
     } catch (error) {
       setAddError(describeError(error));
@@ -133,7 +143,7 @@ function AccountsSection() {
       setEditing(null);
       setEditKey("");
       setConfirmDelete(false);
-      setNotice("已保存修改。");
+      setNotice(t("settings.keys.saved"));
       await load();
     } catch (error) {
       setEditError(describeError(error));
@@ -157,7 +167,7 @@ function AccountsSection() {
       setEditing(null);
       setEditKey("");
       setConfirmDelete(false);
-      setNotice(result.removed ? "已从监控列表删除。" : "这个 Key 已经不在了。");
+      setNotice(result.removed ? t("settings.keys.deleted") : t("settings.keys.gone"));
       await load();
     } catch (error) {
       setEditError(describeError(error));
@@ -168,31 +178,32 @@ function AccountsSection() {
 
   return (
     <>
-      <SettingsSection
-        title="监控的 Key"
-        info="手动添加的 Key 保存在 daemon 的 Paseo 数据目录（默认 ~/.paseo/deepseek-usage/accounts.json，权限 0600），不写进插件设置，也不会出现在用量报告里。"
-      >
+      <SettingsSection title={t("settings.sections.keys")} info={t("settings.keys.info")}>
         <SettingsCard>
           {notice ? <SettingsRow label={notice} /> : null}
-          {loading && !view ? <SettingsRow label="读取中…" /> : null}
+          {loading && !view ? <SettingsRow label={t("settings.common.loading")} /> : null}
           {listError ? (
             <>
-              <SettingsRow label="读取失败" error={listError} />
-              <SettingsAction label="重试" actionLabel="重试" onPress={() => void load()} />
+              <SettingsRow label={t("settings.keys.readFailed")} error={listError} />
+              <SettingsAction
+                label={t("settings.keys.retry")}
+                actionLabel={t("settings.keys.retry")}
+                onPress={() => void load()}
+              />
             </>
           ) : null}
           {view && view.manual.length === 0 ? (
-            <SettingsRow
-              label="还没有手动添加的 Key"
-              hint="在下面的「添加 Key」里填一个官方 API Key 就能加入监控。"
-            />
+            <SettingsRow label={t("settings.keys.empty")} hint={t("settings.keys.emptyHint")} />
           ) : null}
           {view?.manual.map((account) => (
             <SettingsAction
               key={account.id}
               label={account.label}
-              hint={`${account.keyHint} · 更新于 ${formatDate(account.updatedAt)}`}
-              actionLabel="编辑"
+              hint={t("settings.keys.updated", {
+                hint: account.keyHint,
+                date: formatDate(account.updatedAt, locale),
+              })}
+              actionLabel={t("settings.keys.edit")}
               onPress={() => beginEdit(account)}
             />
           ))}
@@ -201,41 +212,43 @@ function AccountsSection() {
 
       {editing ? (
         <SettingsSection
-          title={`编辑「${editing.label}」`}
-          info="替换 Key 会生成一张新的账号卡片；留空表示只改名称。"
+          title={t("settings.sections.editKey", { label: editing.label })}
+          info={t("settings.keys.editInfo")}
         >
           <SettingsCard>
             <SettingsInput
               key={`edit-label-${editing.id}-${formKey}`}
-              label="名称"
+              label={t("settings.keys.name")}
               initialValue={editing.label}
               onChangeText={setEditLabel}
             />
             <SettingsInput
               key={`edit-key-${editing.id}-${formKey}`}
-              label="替换 Key（可选）"
-              hint="留空 = 不改；填了会用新 Key 替换旧 Key。"
+              label={t("settings.keys.replaceKey")}
+              hint={t("settings.keys.replaceKeyHint")}
               placeholder="sk-..."
               secureTextEntry
               onChangeText={setEditKey}
             />
             <SettingsAction
-              label="保存修改"
-              actionLabel={editBusy ? "保存中…" : "保存"}
+              label={t("settings.keys.save")}
+              actionLabel={editBusy ? t("settings.keys.saving") : t("settings.keys.saveAction")}
               error={editError ?? undefined}
               onPress={() => void saveEdit()}
               disabled={editBusy}
             />
             <SettingsAction
-              label="删除这个 Key"
-              hint="只从插件列表移除，不会动 DeepSeek 账号本身。"
-              actionLabel={confirmDelete ? "确认删除" : "删除"}
+              label={t("settings.keys.delete")}
+              hint={t("settings.keys.deleteHint")}
+              actionLabel={
+                confirmDelete ? t("settings.keys.confirmDelete") : t("settings.keys.deleteAction")
+              }
               onPress={() => void deleteEditing()}
               disabled={editBusy}
             />
             <SettingsAction
-              label="不修改了"
-              actionLabel="取消"
+              label={t("settings.common.cancel")}
+              actionLabel={t("settings.common.cancel")}
               onPress={cancelEdit}
               disabled={editBusy}
             />
@@ -243,29 +256,26 @@ function AccountsSection() {
         </SettingsSection>
       ) : null}
 
-      <SettingsSection
-        title="添加 Key"
-        info="只接受 api.deepseek.com 的官方 Key；同一把 Key 出现在多个来源时只会生成一张卡片。"
-      >
+      <SettingsSection title={t("settings.sections.addKey")} info={t("settings.keys.addInfo")}>
         <SettingsCard>
           <SettingsInput
             key={`add-label-${formKey}`}
-            label="名称（可选）"
-            hint="显示在用量卡片上，方便区分多个账号。留空会显示「自定义 Key」。"
-            placeholder="例如：备用账号"
+            label={t("settings.keys.addName")}
+            hint={t("settings.keys.addNameHint")}
+            placeholder={t("settings.keys.addNamePlaceholder")}
             onChangeText={setAddLabel}
           />
           <SettingsInput
             key={`add-key-${formKey}`}
-            label="API Key"
-            hint="只发送给 api.deepseek.com，不会写进插件设置。"
+            label={t("settings.keys.addKey")}
+            hint={t("settings.keys.addKeyHint")}
             placeholder="sk-..."
             secureTextEntry
             onChangeText={setAddKey}
           />
           <SettingsAction
-            label="添加到监控"
-            actionLabel={addBusy ? "添加中…" : "添加"}
+            label={t("settings.keys.addAction")}
+            actionLabel={addBusy ? t("settings.keys.adding") : t("settings.keys.add")}
             error={addError ?? undefined}
             onPress={() => void add()}
             disabled={addBusy}
@@ -273,29 +283,27 @@ function AccountsSection() {
         </SettingsCard>
       </SettingsSection>
 
-
-      <SettingsSection
-        title="自动发现的 Key"
-        info="从本机已有工具的配置里读取，插件只读，不会修改这些文件。与手动 Key 重复时只显示手动那一条。"
-      >
+      <SettingsSection title={t("settings.sections.autoKeys")} info={t("settings.keys.autoInfo")}>
         <SettingsCard>
           {view?.auto.map((account) => (
             <SettingsRow
-              key={`${account.store}-${account.harness}`}
-              label={account.harness}
-              hint={STORE_LABEL[account.store]}
+              key={account.store}
+              label={storeLabel(account.store)}
+              hint={STORE_HINT[account.store]}
             />
           ))}
           {view && view.auto.length === 0 ? (
             <SettingsRow
-              label="没有自动发现 Key"
-              hint="可以手动添加，或按 README 配置环境变量 / 已有工具的凭据文件。"
+              label={t("settings.keys.autoEmpty")}
+              hint={t("settings.keys.autoEmptyHint")}
             />
           ) : null}
           <SettingsAction
-            label="刷新列表"
-            hint="添加或删除后也会自动刷新。"
-            actionLabel={loading ? "读取中…" : "刷新"}
+            label={t("settings.keys.refresh")}
+            hint={t("settings.keys.refreshHint")}
+            actionLabel={
+              loading ? t("settings.keys.refreshing") : t("settings.keys.refreshAction")
+            }
             onPress={() => void load()}
             disabled={loading}
           />
